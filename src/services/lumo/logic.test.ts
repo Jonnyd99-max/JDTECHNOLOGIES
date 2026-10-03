@@ -11,6 +11,8 @@ describe("wake phrases", () => {
     "Lumo note this action",
     "Lumo take a note",
     "LUMA, take this action",
+    "Limo take this action",
+    "Lumos take this action",
   ])("recognises %s", (phrase) =>
     expect(
       detector.detect(`${phrase}. Sarah to send the figures.`)?.instruction,
@@ -19,10 +21,11 @@ describe("wake phrases", () => {
   it("ignores ordinary conversation", () => {
     expect(detector.detect("John will send figures tomorrow.")).toBeNull();
     expect(detector.detect("We need to take an action")).toBeNull();
+    expect(detector.detect("The limousine arrives tomorrow")).toBeNull();
   });
   it("supports standalone wake word", () =>
     expect(detector.detect("Lumo!")?.instruction).toBe(""));
-  it.each(["Lumo", "Luma", "Loomo"])(
+  it.each(["Lumo", "Luma", "Loomo", "Limo", "Lumos"])(
     "captures an instruction directly after %s",
     (word) => {
       expect(
@@ -59,6 +62,12 @@ describe("action parsing", () => {
     expect(parser.parse("Check the schedule", "m").owner).toBe("Unassigned"));
 });
 describe("action capture boundaries", () => {
+  it.each(["Limo", "Lumos"])("arms and captures from misheard %s", (word) => {
+    const capture = new ActionCaptureService();
+    expect(capture.observePartial(word)).toBe(true);
+    capture.accept(`${word} take this action, Olivia needs to get ready for bed`);
+    expect(capture.flush()).toBe("Olivia needs to get ready for bed");
+  });
   it("arms from interim wake text without saving interim instructions", () => {
     const capture = new ActionCaptureService();
     expect(capture.observePartial("Lumo")).toBe(true);
