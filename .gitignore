@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+android/.gradle/
+android/local.properties
+android/**/build/
+*.jks
+*.keystore
+coverage/
+.build-tools/
+*.tsbuildinfo
+.pnpm-store/
