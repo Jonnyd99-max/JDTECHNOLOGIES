@@ -16,9 +16,16 @@ import { ActionEditor, ActionList } from "../../components/Actions";
 import { Modal } from "../../components/UI";
 import { duration, meetingSeconds, timeLabel } from "../../utils/format";
 import type { Action } from "../../models";
+import {
+  voicePrivacyNotice,
+  voiceProviderId,
+} from "../../services/audio/createTranscriptionProvider";
 export function MeetingScreen() {
   const session = useMeetingSession();
   const { settings, updateSettings } = useStore();
+  const hasVoiceConsent =
+    settings.speechConsent &&
+    settings.speechConsentProvider === voiceProviderId();
   const navigate = useNavigate();
   const [now, setNow] = useState(Date.now());
   const [editor, setEditor] = useState<Action | "new" | null>(null);
@@ -33,7 +40,7 @@ export function MeetingScreen() {
     return () => clearInterval(id);
   }, []);
   useEffect(() => {
-    if (settings.speechConsent) void session.startVoice();
+    if (hasVoiceConsent) void session.startVoice();
     else setConsent(true);
   }, []);
   useEffect(() => {
@@ -44,7 +51,7 @@ export function MeetingScreen() {
     return () => window.removeEventListener("beforeunload", warn);
   }, []);
   const enable = () =>
-    settings.speechConsent ? void session.startVoice() : setConsent(true);
+    hasVoiceConsent ? void session.startVoice() : setConsent(true);
   const finish = () =>
     navigate(`/lumo/history/${session.end()}`, { replace: true });
   const latest = session.meeting.actions.findLast((a) => !a.confirmed);
@@ -223,11 +230,7 @@ export function MeetingScreen() {
           title="Enable voice recognition"
           onClose={() => setConsent(false)}
         >
-          <p>
-            Browser speech recognition may send your microphone audio to the
-            browser vendor's servers. It can require an internet connection.
-            Lumo does not save raw audio.
-          </p>
+          <p>{voicePrivacyNotice()}</p>
           <p className="muted">
             Only enable voice with the agreement of everyone in the meeting. You
             can use manual actions without enabling voice.
@@ -242,7 +245,10 @@ export function MeetingScreen() {
             <button
               className="button primary"
               onClick={() => {
-                updateSettings({ speechConsent: true });
+                updateSettings({
+                  speechConsent: true,
+                  speechConsentProvider: voiceProviderId(),
+                });
                 setConsent(false);
                 void session.startVoice();
               }}

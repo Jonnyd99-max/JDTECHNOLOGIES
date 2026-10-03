@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { Orb } from "../../components/Orb";
 import { useStore } from "../../storage/AppStore";
+import { voicePrivacyNotice } from "../../services/audio/createTranscriptionProvider";
 export function LumoHome() {
   const { settings, updateSettings, meetings } = useStore();
   const [step, setStep] = useState(0);
@@ -29,8 +30,7 @@ export function LumoHome() {
       },
       {
         title: "Your meetings stay yours.",
-        description:
-          "Meeting data stays on this device. Browser voice recognition may send speech to its vendor for transcription. You choose when to enable voice.",
+        description: `Meeting data stays on this device. ${voicePrivacyNotice()} You choose when to enable voice.`,
         eyebrow: "PRIVACY, BUILT IN",
       },
     ];

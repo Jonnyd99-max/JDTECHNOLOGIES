@@ -41,6 +41,7 @@ export interface Settings {
   intensity: "low" | "normal" | "high";
   onboardingDone: boolean;
   speechConsent: boolean;
+  speechConsentProvider: "browser" | "android" | "";
 }
 export const defaultSettings: Settings = {
   wakePhrase: true,
@@ -51,4 +52,5 @@ export const defaultSettings: Settings = {
   intensity: "normal",
   onboardingDone: false,
   speechConsent: false,
+  speechConsentProvider: "",
 };

@@ -3,6 +3,7 @@ import { ShieldCheck, Trash2 } from "lucide-react";
 import { useStore } from "../../storage/AppStore";
 import { PageHeading, Modal } from "../../components/UI";
 import type { Settings } from "../../models";
+import { voicePrivacyNotice } from "../../services/audio/createTranscriptionProvider";
 function Toggle({
   title,
   description,
@@ -123,10 +124,8 @@ export function SettingsScreen() {
               transcription service is configured.
             </p>
             <p className="muted">
-              The current browser speech provider may send audio to the browser
-              vendor for recognition. Raw audio is never saved by Lumo. Voice
-              may not work offline. Device data is not encrypted by this app and
-              is not synced across devices.
+              {voicePrivacyNotice()} Device data is not encrypted by this app
+              and is not synced across devices.
             </p>
           </div>
         </div>

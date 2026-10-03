@@ -3,6 +3,13 @@ import { beforeEach, expect, it } from "vitest";
 import { LocalMeetingStorage } from "./MeetingStorage";
 import { defaultSettings, type Meeting } from "../models";
 const storage = new LocalMeetingStorage();
+it("requires fresh provider consent for settings from earlier versions", () => {
+  localStorage.setItem(
+    "jd.settings.v1",
+    JSON.stringify({ speechConsent: true }),
+  );
+  expect(storage.loadSettings().speechConsentProvider).toBe("");
+});
 const meeting: Meeting = {
   id: "m",
   name: "Meeting",

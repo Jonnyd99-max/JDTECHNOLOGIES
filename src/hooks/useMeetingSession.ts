@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { AudioCaptureService } from "../services/audio/AudioCaptureService";
-import { BrowserTranscriptionProvider } from "../services/audio/BrowserTranscriptionProvider";
+import { createTranscriptionProvider } from "../services/audio/createTranscriptionProvider";
 import { WakePhraseDetector } from "../services/lumo/WakePhraseDetector";
 import { ActionCaptureService } from "../services/lumo/ActionCaptureService";
 import { DeterministicActionParser } from "../services/lumo/ActionParser";
@@ -31,7 +31,7 @@ export function useMeetingSession() {
   const save = useRef(store.saveMeeting);
   save.current = store.saveMeeting;
   const audio = useRef(new AudioCaptureService());
-  const provider = useRef(new BrowserTranscriptionProvider());
+  const provider = useRef(createTranscriptionProvider());
   const captureBuffer = useRef(new ActionCaptureService());
   const mounted = useRef(true);
   const starting = useRef(false);
@@ -141,12 +141,12 @@ export function useMeetingSession() {
         throw new Error(
           "Speech recognition is unavailable here. Add actions manually, or use Chrome on Android.",
         );
-      await audio.current.start();
+      if (!provider.current.managesMicrophone) await audio.current.start();
       if (!mounted.current || requestGeneration !== generation.current) {
         audio.current.stop();
         return;
       }
-      provider.current.startListening({
+      await provider.current.startListening({
         onFinalTranscript: onFinal,
         onPartialTranscript: (text) => {
           if (!mounted.current) return;
@@ -167,6 +167,7 @@ export function useMeetingSession() {
           if (!mounted.current) return;
           setMessage(error);
           if (fatal) {
+            generation.current++;
             audio.current.stop();
             provider.current.stopListening();
             listening.current = false;
@@ -181,6 +182,11 @@ export function useMeetingSession() {
             );
         },
       });
+      if (!mounted.current || requestGeneration !== generation.current) {
+        audio.current.stop();
+        provider.current.stopListening();
+        return;
+      }
       listening.current = true;
       setVoice(true);
       setState("waiting");

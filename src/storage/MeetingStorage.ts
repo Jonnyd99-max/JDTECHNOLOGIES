@@ -58,6 +58,11 @@ export class LocalMeetingStorage implements MeetingStorage {
       settings.appearance = value.appearance!;
     if (["low", "normal", "high"].includes(value.intensity || ""))
       settings.intensity = value.intensity!;
+    if (
+      value.speechConsentProvider === "browser" ||
+      value.speechConsentProvider === "android"
+    )
+      settings.speechConsentProvider = value.speechConsentProvider;
     return settings;
   }
   saveSettings(settings: Settings): void {

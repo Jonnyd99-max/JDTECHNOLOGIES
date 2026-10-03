@@ -8,7 +8,7 @@ JD Technology is a mobile-first, modular business workspace. Its first module, *
 
 - Configuration-driven workspace with Lumo and five disabled future tools.
 - Three-step first-run onboarding, animated orb states, touch-friendly meeting controls.
-- Microphone permission handling and replaceable browser transcription service.
+- Microphone permission handling and replaceable browser/native Android transcription services.
 - Wake phrase detection, deterministic owner/task parsing and action review.
 - Manual actions, due dates, editing, completion and deletion.
 - Local meeting recovery, history, rename, transcript review and deletion.
@@ -39,7 +39,7 @@ npm run preview
 ## Use Lumo
 
 1. Open Lumo and complete onboarding.
-2. Start a meeting. Choose whether to enable browser voice or work manually.
+2. Start a meeting. Choose whether to enable voice or work manually.
 3. When enabling voice, review the privacy notice and grant microphone permission.
 4. Say **“Lumo take this action, James needs to check the furnace loading.”**
 5. Leave a short pause after your instruction. Lumo captures the action after about two seconds without a final speech event. Review and confirm the result.
@@ -50,7 +50,9 @@ Supported phrases: “Lumo take this action”, “Lumo take an action”, “Lu
 
 ## Speech recognition and privacy
 
-The default provider uses the browser Web Speech API (`SpeechRecognition` / `webkitSpeechRecognition`) with `en-GB`, continuous recognition and interim feedback. **This API is not an offline or guaranteed private transcription engine.** Chrome and other browsers may send microphone audio to their vendor's servers and require a network connection. Lumo explains this before enabling voice. There are no app-owned AI API calls or keys.
+The website uses the browser Web Speech API (`SpeechRecognition` / `webkitSpeechRecognition`) with `en-GB`, continuous recognition and interim feedback. **This API is not an offline or guaranteed private transcription engine.** Chrome and other browsers may send microphone audio to their vendor's servers and require a network connection. Lumo explains this before enabling voice. There are no app-owned AI API calls or keys.
+
+The Android APK uses the app's `LumoSpeech` Capacitor plugin backed by Android `SpeechRecognizer`, independently of WebView speech support. It selects Android's on-device recognizer on Android 12+ when available; otherwise it uses the installed system speech service with an offline preference. The fallback service can ignore that preference and process audio remotely, so consent explains both cases. Recognition uses English (UK); an installed language model may be required. On-device service availability does not guarantee that its English model is installed. Lumo does not silently switch from an on-device recognition error to a cloud provider.
 
 - Lumo stores meetings, actions, settings and optional transcripts in device-local storage. It never records or permanently stores raw audio.
 - Data is scoped to the installed app or browser origin; the Android app and website do not share history.
@@ -58,7 +60,7 @@ The default provider uses the browser Web Speech API (`SpeechRecognition` / `web
 - Android automatic backup is disabled. Only internet and microphone permissions are declared. Microphone access is initiated when voice is enabled.
 - Browser recognition can terminate unexpectedly; the provider attempts to reconnect and provides a manual fallback. Network and permission errors appear as readable messages.
 - Recognition accuracy depends on browser support, accents, noise, connectivity and vendor limits. There is no speaker diarization, guaranteed full transcript, background listening or foreground service. Voice pauses when the page becomes hidden; tap **Enable voice** to resume after returning.
-- **Android WebView frequently lacks Web Speech recognition.** The Capacitor app supports the full manual flow, but native voice is not guaranteed. For the initial voice milestone, use the HTTPS PWA in Chrome on your Android phone. A native transcription provider is the recommended next development step.
+- Android voice is handled natively, bypassing WebView speech limitations. The plugin requests permission only when starting, forwards partial/final results, restarts between utterances, limits repeated error retries, and releases the microphone on stop/background/destroy. Android speech engines can introduce small gaps and audible cues between utterances; this is a foreground meeting assistant, not a guaranteed continuous audio recorder. Voice accuracy and lifecycle still require testing on the phone.
 - Raw audio capture and transcript persistence are separate. No frontend secrets are needed. `.env.example` documents public build configuration; never put secrets in `VITE_` variables.
 - Typography uses Google Fonts when online and local system fallbacks offline. No meeting data is sent to the font service.
 
@@ -119,7 +121,13 @@ cd android
 .\gradlew.bat assembleDebug
 ```
 
-Output: `android/app/build/outputs/apk/debug/app-debug.apk`. APK compilation requires a local Android SDK/JDK and was not performed in the build environment. Signing, Play Store submission and device voice validation remain user/device steps.
+Output: `android/app/build/outputs/apk/debug/app-debug.apk`. Signing, Play Store submission and device voice validation remain user/device steps.
+
+### Download a test APK without Android Studio
+
+GitHub Actions includes **Build Android APK**. It runs for application changes pushed to `main`, and can also be started using **Actions → Build Android APK → Run workflow**. A successful run contains a **jd-technology-debug-apk** artifact, retained for 14 days. Download and unzip it to obtain `app-debug.apk`, then transfer it to your phone and install it. Android may ask you to allow installation from your browser/file manager.
+
+This is a debug build for personal testing, not a signed production release. Hosted runners generate a debug signing key per build; a later APK may require uninstalling the older debug app, which deletes its local meetings. Copy actions before uninstalling. A stable release signing key is needed before distributing updateable production APKs.
 
 ## Architecture
 
@@ -131,24 +139,25 @@ src/
   features/lumo/             Home, meeting, summary, history and settings screens
   hooks/useMeetingSession.ts Meeting orchestration and speech/action lifecycle
   models/                    Typed meeting, action, transcript and settings models
-  services/audio/            Permissions, microphone and transcription interfaces
+  services/audio/            Permissions, browser/native providers and transcription interfaces
   services/lumo/             Wake detector, parser, capture buffer, suggestion contract
   services/clipboard.ts      Browser and native clipboard adapter
   storage/                   Persistent store context and replaceable storage contract
   theme/                     Responsive design tokens, orb animations and themes
   utils/                     Duration, date and share-text formatting
-android/                     Generated native project and microphone manifest
+android/                     Native project, LumoSpeech plugin and microphone manifest
 .github/workflows/pages.yml Verified-build Pages deployment
+.github/workflows/android.yml Android compile and downloadable debug APK
 ```
 
 To add a future module: create a feature folder, register its metadata in `apps.config.ts`, mark it active, and register its routes in `App.tsx`. Keep module-specific services and models independent of the shell. The workspace cards are automatically generated from the registry; inactive cards are not navigable.
 
-To add a transcription engine: implement `TranscriptionProvider` and inject it where `BrowserTranscriptionProvider` is selected in `useMeetingSession`. The native interface can expose its network requirement. A native Capacitor speech plugin should request permission only on `startListening`, stream partial/final events through the same callbacks and stop all recording on teardown. For a cloud engine, use a server-side credential boundary and explicit consent; never embed API keys in the web bundle.
+To add a transcription engine: implement `TranscriptionProvider` and select it in `createTranscriptionProvider.ts`. Native providers set `managesMicrophone` so the meeting hook does not start simultaneous web capture. `AndroidTranscriptionProvider` bridges `LumoSpeechPlugin.java`, registered before bridge initialization in `MainActivity.java`. Its listener/session guards prevent late results from modifying a stopped meeting. For a cloud engine, use a server-side credential boundary and explicit consent; never embed API keys in the web bundle.
 
 To improve extraction: implement `ActionParser`. `SuggestedActionProvider` is an intentionally disabled future interface for opt-in action suggestions from transcripts. No background AI analysis runs in version 1.
 
 ## Validation and next step
 
-Automated tests cover wake phrases, real instruction examples, multi-event speech boundaries, durations, clipboard text, storage recovery and storage errors. The mobile flow is checked in the browser with simulated speech and manual actions. Real microphone accuracy and APK operation require tests on the actual phone.
+Automated tests cover wake phrases, real instruction examples, multi-event speech boundaries, durations, clipboard text, storage recovery, storage errors and native provider cancellation/listener cleanup. The mobile flow is checked in the browser with simulated speech and manual actions. GitHub Actions compiles the Android project; real microphone accuracy and APK operation require tests on the actual phone.
 
-Recommended next step: add an on-device/native Android speech recognition provider and test permission denial, pause/resume, screen locking and network interruption on the Galaxy S24 Ultra before relying on Lumo in business meetings.
+Recommended next step: install the APK on the Galaxy S24 Ultra and test permission denial, multiple spoken actions, pause/resume, screen locking and offline language support before relying on Lumo in business meetings. Then add persistent release signing and a device-tested release build workflow.

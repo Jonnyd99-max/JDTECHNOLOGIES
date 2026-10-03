@@ -6,10 +6,11 @@ export interface TranscriptionCallbacks {
 }
 export interface TranscriptionProvider {
   readonly available: boolean;
-  startListening(callbacks: TranscriptionCallbacks): void;
+  readonly managesMicrophone?: boolean;
+  startListening(callbacks: TranscriptionCallbacks): void | Promise<void>;
   stopListening(): void;
 }
-// Replace this provider with a Capacitor native/offline implementation when available.
+// Native providers own microphone permission and capture, avoiding simultaneous web capture.
 export interface NativeTranscriptionProvider extends TranscriptionProvider {
   readonly requiresNetwork: boolean;
 }
