@@ -108,14 +108,141 @@ describe("Chrome recognition lifecycle", () => {
         { isFinal: false, 0: { transcript: "Olivia needs" } },
       ],
     });
+    expect(cb.onFinalTranscript).not.toHaveBeenCalled();
+    expect(cb.onPartialTranscript).toHaveBeenCalledWith("Lumo Olivia needs");
+    await vi.advanceTimersByTimeAsync(900);
     expect(cb.onFinalTranscript).toHaveBeenCalledWith("Lumo");
-    expect(cb.onPartialTranscript).toHaveBeenCalledWith("Olivia needs");
     cb.onStatus.mockClear();
     FakeRecognition.instance.onend?.();
     await vi.advanceTimersByTimeAsync(700);
     expect(cb.onStatus).not.toHaveBeenCalledWith("Voice connected");
     FakeRecognition.instance.onstart?.();
     expect(cb.onStatus).toHaveBeenCalledWith("Voice connected");
+    provider.stopListening();
+  });
+  it("saves cumulative mobile results once as a complete sentence", async () => {
+    const provider = new BrowserTranscriptionProvider();
+    const cb = callbacks();
+    const pending = provider.startListening(cb);
+    FakeRecognition.instance.onstart?.();
+    await pending;
+    const revisions = [
+      "Hi",
+      "Hi",
+      "Hi Olivia",
+      "Hi Olivia needs",
+      "Hi Olivia needs to go",
+      "Hi Olivia needs to go to bed",
+    ];
+    for (let i = 0; i < revisions.length; i++) {
+      FakeRecognition.instance.onresult?.({
+        resultIndex: i,
+        results: revisions
+          .slice(0, i + 1)
+          .map((transcript) => ({ isFinal: true, 0: { transcript } })),
+      });
+      await vi.advanceTimersByTimeAsync(100);
+    }
+    expect(cb.onPartialTranscript).toHaveBeenLastCalledWith(
+      "Hi Olivia needs to go to bed",
+    );
+    await vi.advanceTimersByTimeAsync(900);
+    expect(cb.onFinalTranscript).toHaveBeenCalledTimes(1);
+    expect(cb.onFinalTranscript).toHaveBeenCalledWith(
+      "Hi Olivia needs to go to bed",
+    );
+    FakeRecognition.instance.onresult?.({
+      resultIndex: 0,
+      results: revisions.map((transcript) => ({
+        isFinal: true,
+        0: { transcript },
+      })),
+    });
+    await vi.advanceTimersByTimeAsync(900);
+    expect(cb.onFinalTranscript).toHaveBeenCalledTimes(1);
+    provider.stopListening();
+  });
+  it("replaces provisional hypotheses instead of accumulating event history", async () => {
+    const provider = new BrowserTranscriptionProvider();
+    const cb = callbacks();
+    const pending = provider.startListening(cb);
+    FakeRecognition.instance.onstart?.();
+    await pending;
+    for (const transcript of [
+      "Hi",
+      "Hi Olivia needs",
+      "Hi Olivia needs to go to bed",
+    ]) {
+      FakeRecognition.instance.onresult?.({
+        resultIndex: 0,
+        results: [{ isFinal: false, 0: { transcript } }],
+      });
+    }
+    expect(cb.onPartialTranscript).toHaveBeenLastCalledWith(
+      "Hi Olivia needs to go to bed",
+    );
+    expect(cb.onFinalTranscript).not.toHaveBeenCalled();
+    provider.stopListening();
+  });
+  it("flushes the completed sentence when voice stops", async () => {
+    const provider = new BrowserTranscriptionProvider();
+    const cb = callbacks();
+    const pending = provider.startListening(cb);
+    FakeRecognition.instance.onstart?.();
+    await pending;
+    FakeRecognition.instance.onresult?.({
+      resultIndex: 0,
+      results: [
+        { isFinal: true, 0: { transcript: "Olivia needs to go to bed" } },
+      ],
+    });
+    provider.stopListening();
+    expect(cb.onFinalTranscript).toHaveBeenCalledWith(
+      "Olivia needs to go to bed",
+    );
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(cb.onFinalTranscript).toHaveBeenCalledTimes(1);
+  });
+  it("accepts repeated speech after the recognizer restarts", async () => {
+    const provider = new BrowserTranscriptionProvider();
+    const cb = callbacks();
+    const pending = provider.startListening(cb);
+    FakeRecognition.instance.onstart?.();
+    await pending;
+    const event = {
+      resultIndex: 0,
+      results: [{ isFinal: true, 0: { transcript: "Hello Olivia" } }],
+    };
+    FakeRecognition.instance.onresult?.(event);
+    FakeRecognition.instance.onend?.();
+    await vi.advanceTimersByTimeAsync(700);
+    FakeRecognition.instance.onstart?.();
+    FakeRecognition.instance.onresult?.(event);
+    await vi.advanceTimersByTimeAsync(900);
+    expect(cb.onFinalTranscript).toHaveBeenCalledTimes(2);
+    provider.stopListening();
+  });
+  it("keeps the newest correction to a final slot before saving", async () => {
+    const provider = new BrowserTranscriptionProvider();
+    const cb = callbacks();
+    const pending = provider.startListening(cb);
+    FakeRecognition.instance.onstart?.();
+    await pending;
+    for (const transcript of [
+      "Hi",
+      "Hi Olivia",
+      "Hi Olivia needs to go to bed",
+    ]) {
+      FakeRecognition.instance.onresult?.({
+        resultIndex: 0,
+        results: [{ isFinal: true, 0: { transcript } }],
+      });
+    }
+    await vi.advanceTimersByTimeAsync(900);
+    expect(cb.onFinalTranscript).toHaveBeenCalledTimes(1);
+    expect(cb.onFinalTranscript).toHaveBeenCalledWith(
+      "Hi Olivia needs to go to bed",
+    );
     provider.stopListening();
   });
 });

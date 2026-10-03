@@ -2,6 +2,10 @@ import type {
   TranscriptionCallbacks,
   TranscriptionProvider,
 } from "./TranscriptionProvider";
+import {
+  finalTranscriptSegments,
+  interimTranscript,
+} from "./interimTranscript";
 interface Result {
   isFinal: boolean;
   0: { transcript: string };
@@ -37,6 +41,8 @@ export class BrowserTranscriptionProvider implements TranscriptionProvider {
   private startup?: ReturnType<typeof setTimeout>;
   private feedback?: ReturnType<typeof setTimeout>;
   private cancelStartup?: () => void;
+  private finalTimer?: ReturnType<typeof setTimeout>;
+  private flushFinals?: () => void;
   startListening(callbacks: TranscriptionCallbacks): Promise<void> {
     this.stopListening();
     const Ctor = constructor();
@@ -52,6 +58,17 @@ export class BrowserTranscriptionProvider implements TranscriptionProvider {
     recognition.lang = "en-GB";
     let ready = false;
     let failures = 0;
+    const delivered = new Set<number>();
+    const pendingFinals = new Map<number, string>();
+    let livePartial = "";
+    this.flushFinals = () => {
+      clearTimeout(this.finalTimer);
+      const completed = finalTranscriptSegments([...pendingFinals.values()]);
+      for (const index of pendingFinals.keys()) delivered.add(index);
+      pendingFinals.clear();
+      for (const text of completed) callbacks.onFinalTranscript(text);
+      if (completed.length) callbacks.onPartialTranscript(livePartial);
+    };
     let rejectStart: (reason: Error) => void = () => {};
     let resolveStart: () => void = () => {};
     const started = new Promise<void>((resolve, reject) => {
@@ -62,6 +79,7 @@ export class BrowserTranscriptionProvider implements TranscriptionProvider {
     recognition.onstart = () => {
       if (!this.running) return;
       ready = true;
+      delivered.clear();
       clearTimeout(this.startup);
       this.cancelStartup = undefined;
       callbacks.onStatus("Voice connected");
@@ -86,13 +104,27 @@ export class BrowserTranscriptionProvider implements TranscriptionProvider {
       if (!this.running) return;
       failures = 0;
       clearTimeout(this.feedback);
-      let partial = "";
-      for (let i = event.resultIndex; i < event.results.length; i++) {
+      const partial: string[] = [];
+      // Read the current result list: unchanged interim slots still belong to
+      // the live sentence, but a final slot must be persisted only once.
+      for (let i = 0; i < event.results.length; i++) {
         const result = event.results[i];
-        if (result.isFinal) callbacks.onFinalTranscript(result[0].transcript);
-        else partial += result[0].transcript;
+        if (result.isFinal) {
+          if (!delivered.has(i)) {
+            pendingFinals.set(i, result[0].transcript);
+          }
+        } else partial.push(result[0].transcript);
       }
-      callbacks.onPartialTranscript(partial);
+      livePartial = interimTranscript(partial);
+      callbacks.onPartialTranscript(
+        interimTranscript([...pendingFinals.values(), ...partial]),
+      );
+      if (pendingFinals.size) {
+        clearTimeout(this.finalTimer);
+        // Allow mobile engines to finish sending cumulative revisions before
+        // saving. The live preview still updates immediately.
+        this.finalTimer = setTimeout(() => this.flushFinals?.(), 900);
+      }
     };
     recognition.onerror = (event) => {
       if (!this.running) return;
@@ -117,6 +149,8 @@ export class BrowserTranscriptionProvider implements TranscriptionProvider {
       else callbacks.onError(message, false);
     };
     recognition.onend = () => {
+      livePartial = "";
+      this.flushFinals?.();
       if (this.running) {
         callbacks.onStatus("Reconnecting voice recognition…");
         this.restart = setTimeout(() => {
@@ -152,6 +186,9 @@ export class BrowserTranscriptionProvider implements TranscriptionProvider {
   }
   stopListening(): void {
     this.running = false;
+    this.flushFinals?.();
+    this.flushFinals = undefined;
+    clearTimeout(this.finalTimer);
     clearTimeout(this.restart);
     clearTimeout(this.startup);
     clearTimeout(this.feedback);

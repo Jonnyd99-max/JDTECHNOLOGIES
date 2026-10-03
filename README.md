@@ -42,7 +42,7 @@ npm run preview
 2. Start a meeting. Choose whether to enable voice or work manually.
 3. When enabling voice, review the privacy notice and grant microphone permission.
 4. Say **“Take this action, James needs to check the furnace loading.”**
-5. Leave a short pause after your instruction. Lumo captures the action after about two seconds without a final speech event. Review and confirm the result.
+5. Leave a short pause after your instruction. Chrome results settle for about 0.9 seconds before saving; action capture follows after two seconds without a new final speech event. Review and confirm the result.
 6. Capture more actions or use **Add action**. View Transcript keeps the conversation out of the main interface.
 7. End the meeting, review the summary, edit actions and copy them to another application.
 
