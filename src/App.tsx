@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAppUpdate } from "./hooks/useAppUpdate";
+import { InstallApp } from "./components/InstallApp";
 import {
   HashRouter,
   Link,
@@ -120,6 +121,7 @@ function Shell() {
             You’re offline. Saved meetings and manual actions are available.
           </div>
         )}
+        <InstallApp hidden={inMeeting} />
         {error && (
           <div className="banner error-banner" role="alert">
             <span>{error}</span>
