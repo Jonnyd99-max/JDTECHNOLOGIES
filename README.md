@@ -41,18 +41,18 @@ npm run preview
 1. Open Lumo and complete onboarding.
 2. Start a meeting. Choose whether to enable voice or work manually.
 3. When enabling voice, review the privacy notice and grant microphone permission.
-4. Say **“Lumo take this action, James needs to check the furnace loading.”**
+4. Say **“Take this action, James needs to check the furnace loading.”**
 5. Leave a short pause after your instruction. Lumo captures the action after about two seconds without a final speech event. Review and confirm the result.
 6. Capture more actions or use **Add action**. View Transcript keeps the conversation out of the main interface.
 7. End the meeting, review the summary, edit actions and copy them to another application.
 
-Supported phrases: “Lumo take this action”, “Lumo take an action”, “Lumo action”, “Lumo note this action”, “Lumo take a note”. Punctuation and case are ignored. A standalone “Lumo” can open an instruction window. Common “Luma”/“Loomo” transcription variants are supported for phrases. Unknown owners are marked **Unassigned** for review. Dates are set manually; natural-language due-date interpretation is not implemented.
+The trigger is **“take this action”**, followed by the owner and task. Case, extra spaces and commas are ignored. The phrase also works when recognition splits it across consecutive final transcript events. Saying “Lumo” alone no longer starts capture. Unknown owners are marked **Unassigned** for review. Dates are set manually; natural-language due-date interpretation is not implemented.
 
 ## Speech recognition and privacy
 
 The website uses the browser Web Speech API (`SpeechRecognition` / `webkitSpeechRecognition`) with `en-GB`, continuous recognition and interim feedback. **This API is not an offline or guaranteed private transcription engine.** Chrome and other browsers may send microphone audio to their vendor's servers and require a network connection. Lumo explains this before enabling voice. There are no app-owned AI API calls or keys.
 
-The meeting screen shows **Heard** text as recognition results arrive. A device microphone indicator alone does not confirm transcription. Browser voice waits for recognition's start event, releases its separate microphone permission probe, and reports startup/network failures with a retry option. If no words appear, keep the app visible, check connectivity and Chrome microphone permission, then pause and enable voice again. Say “Lumo, Olivia needs to get ready for bed” and pause; saying only “Lumo” opens capture but requires a following instruction. Installed web apps may retain an older version: close the app and all site tabs, then reopen. Future updates show an **Update app** button outside active meetings.
+The meeting screen shows **Heard** text as recognition results arrive. A device microphone indicator alone does not confirm transcription. Browser voice waits for recognition's start event, releases its separate microphone permission probe, and reports startup/network failures with a retry option. If no words appear, keep the app visible, check connectivity and Chrome microphone permission, then pause and enable voice again. Say “Take this action, Olivia needs to get ready for bed” and pause. Saying only “take this action” opens capture and waits for the instruction. Installed web apps may retain an older version: close the app and all site tabs, then reopen. Future updates show an **Update app** button outside active meetings.
 
 The Android APK uses the app's `LumoSpeech` Capacitor plugin backed by Android `SpeechRecognizer`, independently of WebView speech support. It selects Android's on-device recognizer on Android 12+ when available; otherwise it uses the installed system speech service with an offline preference. The fallback service can ignore that preference and process audio remotely, so consent explains both cases. Recognition uses English (UK); an installed language model may be required. On-device service availability does not guarantee that its English model is installed. Lumo does not silently switch from an on-device recognition error to a cloud provider.
 

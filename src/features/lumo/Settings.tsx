@@ -48,7 +48,7 @@ export function SettingsScreen() {
         <div className="settings-card">
           <Toggle
             title="Wake phrase"
-            description="Listen for “Lumo take this action” during meetings."
+            description="Listen for “Take this action” during meetings."
             checked={settings.wakePhrase}
             onChange={(wakePhrase) => updateSettings({ wakePhrase })}
           />

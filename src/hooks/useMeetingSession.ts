@@ -62,7 +62,7 @@ export function useMeetingSession() {
     if (!instruction) {
       setState(listening.current ? "waiting" : "idle");
       setMessage(
-        "No action instruction heard. Say “Lumo, James needs to check the schedule.”",
+        "No action instruction heard. Say “Take this action, James needs to check the schedule.”",
       );
       return;
     }
@@ -79,7 +79,7 @@ export function useMeetingSession() {
           setState(listening.current ? "waiting" : "idle");
           setMessage(
             listening.current
-              ? "Listening for “Lumo”"
+              ? "Waiting for “take this action”"
               : "Enable voice or add actions manually.",
           );
         }
@@ -184,7 +184,9 @@ export function useMeetingSession() {
         onStatus: (status) => {
           if (mounted.current)
             setMessage(
-              status === "Voice connected" ? "Listening for “Lumo”" : status,
+              status === "Voice connected"
+                ? "Waiting for “take this action”"
+                : status,
             );
         },
       });
@@ -198,7 +200,7 @@ export function useMeetingSession() {
       setState("waiting");
       setMessage(
         settings.current.wakePhrase
-          ? "Listening for “Lumo”"
+          ? "Waiting for “take this action”"
           : "Transcribing · wake phrase disabled",
       );
     } catch (error) {
@@ -251,7 +253,7 @@ export function useMeetingSession() {
     startVoice,
     stop,
     simulate: onFinal,
-    simulateWake: () => onFinal("Lumo take this action"),
+    simulateWake: () => onFinal("Take this action"),
     updateAction: (a: Action) =>
       update({
         ...current.current,

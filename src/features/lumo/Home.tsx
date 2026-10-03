@@ -25,7 +25,7 @@ export function LumoHome() {
       {
         title: "Say it. Capture it.",
         description:
-          "Say “Lumo take this action…” followed by the owner and task. For example: “James needs to check furnace loading.”",
+          "Say “Take this action…” followed by the owner and task. For example: “James needs to check furnace loading.”",
         eyebrow: "CAPTURE ACTIONS NATURALLY",
       },
       {

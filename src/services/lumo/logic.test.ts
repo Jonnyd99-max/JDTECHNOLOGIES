@@ -2,50 +2,31 @@ import { describe, expect, it } from "vitest";
 import { WakePhraseDetector } from "./WakePhraseDetector";
 import { DeterministicActionParser } from "./ActionParser";
 import { ActionCaptureService } from "./ActionCaptureService";
-describe("wake phrases", () => {
+describe("action trigger", () => {
   const detector = new WakePhraseDetector();
   it.each([
-    "Lumo take this action",
-    "Lumo take an action",
-    "Lumo action",
-    "Lumo note this action",
-    "Lumo take a note",
-    "LUMA, take this action",
+    "Take this action",
+    "TAKE THIS ACTION",
+    "take   this action",
+    "Take, this, action",
     "Limo take this action",
-    "Lumos take this action",
-  ])("recognises %s", (phrase) =>
+  ])("recognises %s", (phrase) => {
     expect(
-      detector.detect(`${phrase}. Sarah to send the figures.`)?.instruction,
-    ).toBe("Sarah to send the figures."),
-  );
-  it("ignores ordinary conversation", () => {
-    expect(detector.detect("John will send figures tomorrow.")).toBeNull();
-    expect(detector.detect("We need to take an action")).toBeNull();
-    expect(detector.detect("The limousine arrives tomorrow")).toBeNull();
-  });
-  it("supports standalone wake word", () =>
-    expect(detector.detect("Lumo!")?.instruction).toBe(""));
-  it.each([
-    "Lumo",
-    "Luma",
-    "Loomo",
-    "Limo",
-    "Lumos",
-    "Lumi",
-    "Lumoh",
-    "Lumoe",
-    "Lummo",
-    "Lumoo",
-    "Loumo",
-    "Leumo",
-    "Lou mo",
-    "Loo mo",
-    "Lu mo",
-    "Lumo’s",
-  ])("captures an instruction directly after %s", (word) => {
-    expect(
-      detector.detect(`${word} Olivia needs to get ready for bed`)?.instruction,
+      detector.detect(`${phrase}: Olivia needs to get ready for bed`)
+        ?.instruction,
     ).toBe("Olivia needs to get ready for bed");
+  });
+  it("opens capture without an instruction", () => {
+    expect(detector.detect("take this action!")?.instruction).toBe("");
+  });
+  it.each([
+    "John will send figures tomorrow.",
+    "Lumo Olivia needs to get ready for bed",
+    "Limos are expensive",
+    "We need to take an action",
+    "take this actionable item",
+  ])("ignores %s", (text) => {
+    expect(detector.detect(text)).toBeNull();
   });
 });
 describe("action parsing", () => {
@@ -75,46 +56,57 @@ describe("action parsing", () => {
     expect(parser.parse("Check the schedule", "m").owner).toBe("Unassigned"));
 });
 describe("action capture boundaries", () => {
-  it.each(["Limo", "Lumos", "Lou mo", "Lumi", "Lumo’s"])(
-    "arms and captures from misheard %s",
-    (word) => {
-      const capture = new ActionCaptureService();
-      expect(capture.observePartial(word)).toBe(true);
-      capture.accept(
-        `${word} take this action, Olivia needs to get ready for bed`,
-      );
-      expect(capture.flush()).toBe("Olivia needs to get ready for bed");
-    },
-  );
-  it("arms from interim wake text without saving interim instructions", () => {
+  it("arms from interim trigger without saving interim instructions", () => {
     const capture = new ActionCaptureService();
-    expect(capture.observePartial("Lumo")).toBe(true);
-    capture.observePartial("Lumo Olivia needs");
+    expect(capture.observePartial("take this")).toBe(false);
+    expect(capture.observePartial("take this action")).toBe(true);
+    capture.observePartial("take this action Olivia needs");
     expect(capture.instruction).toBe("");
     capture.accept("Olivia needs to get ready for bed");
     expect(capture.flush()).toBe("Olivia needs to get ready for bed");
   });
-  it("does not duplicate an interim phrase repeated in the final result", () => {
+  it("does not duplicate interim text repeated in a final result", () => {
     const capture = new ActionCaptureService();
-    capture.observePartial("Lumo Olivia needs");
-    capture.accept("Lumo Olivia needs to get ready for bed");
+    capture.observePartial("take this action Olivia needs");
+    capture.accept("take this action Olivia needs to get ready for bed");
     expect(capture.flush()).toBe("Olivia needs to get ready for bed");
   });
-  it("combines separate speech events and ignores conversation after flush", () => {
+  it("combines separate instruction events and ignores conversation after flush", () => {
     const capture = new ActionCaptureService();
-    capture.accept("Lumo take this action.");
+    capture.accept("take this action.");
     capture.accept("James needs to check");
     capture.accept("the furnace loading.");
     expect(capture.flush()).toBe("James needs to check the furnace loading.");
     capture.accept("We are discussing costs now.");
     expect(capture.flush()).toBe("");
   });
-  it("preserves two consecutive wake phrases", () => {
+  it("recognises a trigger split across final events", () => {
     const capture = new ActionCaptureService();
-    capture.accept("Lumo action, James to check loading");
-    expect(capture.accept("Lumo action, Sarah to send targets").previous).toBe(
-      "James to check loading",
-    );
+    capture.accept("take");
+    capture.accept("this");
+    capture.accept("action, Olivia needs to get ready for bed");
+    expect(capture.flush()).toBe("Olivia needs to get ready for bed");
+  });
+  it("strips a split trigger completed by interim and final events", () => {
+    const capture = new ActionCaptureService();
+    capture.accept("take this");
+    expect(capture.observePartial("action Olivia needs")).toBe(true);
+    capture.accept("action Olivia needs to get ready for bed");
+    expect(capture.flush()).toBe("Olivia needs to get ready for bed");
+  });
+  it("discards an interrupted trigger", () => {
+    const capture = new ActionCaptureService();
+    capture.accept("take");
+    capture.accept("a break");
+    capture.accept("this action is complete");
+    expect(capture.flush()).toBe("");
+  });
+  it("preserves two consecutive triggers", () => {
+    const capture = new ActionCaptureService();
+    capture.accept("take this action, James to check loading");
+    expect(
+      capture.accept("take this action, Sarah to send targets").previous,
+    ).toBe("James to check loading");
     expect(capture.flush()).toBe("Sarah to send targets");
   });
 });

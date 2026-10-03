@@ -32,8 +32,9 @@ export function MeetingScreen() {
   const [endDialog, setEndDialog] = useState(false);
   const [transcript, setTranscript] = useState(false);
   const [consent, setConsent] = useState(false);
+  const [previewWaiting, setPreviewWaiting] = useState(false);
   const [example, setExample] = useState(
-    "Lumo take this action, James needs to check the furnace loading.",
+    "Take this action, James needs to check the furnace loading.",
   );
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000);
@@ -71,7 +72,11 @@ export function MeetingScreen() {
         </span>
       </div>
       <div className="meeting-orb">
-        <Orb state={session.state} />
+        <Orb
+          state={
+            import.meta.env.DEV && previewWaiting ? "waiting" : session.state
+          }
+        />
         <h1 className="meeting-status" aria-live="polite">
           {session.state === "recording" || session.state === "wake"
             ? "Listening…"
@@ -81,7 +86,7 @@ export function MeetingScreen() {
                 ? "Action captured"
                 : session.voice
                   ? settings.wakePhrase
-                    ? "Listening for “Lumo”"
+                    ? "Waiting for “take this action”"
                     : "Transcribing meeting"
                   : "Ready when you are."}
         </h1>
@@ -95,8 +100,8 @@ export function MeetingScreen() {
         </p>
         {settings.wakePhrase && (
           <p className="muted status-detail">
-            Say “Lumo, James needs to check the schedule.” Then pause to save
-            the action.
+            Say “Take this action, James needs to check the schedule.” Then
+            pause to save the action.
           </p>
         )}
         {!session.voice && (
@@ -182,6 +187,12 @@ export function MeetingScreen() {
             />
           </label>
           <div className="inline-buttons">
+            <button
+              className="button secondary small"
+              onClick={() => setPreviewWaiting(!previewWaiting)}
+            >
+              {previewWaiting ? "Stop orb preview" : "Preview waiting orb"}
+            </button>
             <button
               className="button secondary small"
               onClick={session.simulateWake}

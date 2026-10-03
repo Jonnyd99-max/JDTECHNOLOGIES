@@ -18,6 +18,8 @@ export function Orb({
       <div className="orb-orbit orbit-two" />
       <div className="orb">
         <div className="orb-texture" />
+        <div className="orb-wave wave-one" />
+        <div className="orb-wave wave-two" />
         <div className="orb-shine" />
       </div>
     </div>

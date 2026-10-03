@@ -535,6 +535,70 @@ i {
   animation-duration: 10s;
   opacity: 1;
 }
+.orb-wave {
+  display: none;
+  position: absolute;
+  inset: 18% -35% -48%;
+  pointer-events: none;
+  border-radius: 42% 58% 62% 38% / 48% 42% 58% 52%;
+  border-top: 3px solid #fff0ba70;
+  background: radial-gradient(
+    ellipse at 50% 12%,
+    #ffe4a577,
+    #ffd89928 35%,
+    transparent 75%
+  );
+  mix-blend-mode: screen;
+}
+.state-waiting .orb {
+  animation: waiting-flow 6s ease-in-out infinite;
+}
+.state-waiting .orb-wave {
+  display: block;
+  animation: wave-flow 5s ease-in-out infinite alternate;
+}
+.state-waiting .wave-two {
+  inset: 38% -25% -60%;
+  opacity: 0.65;
+  animation-direction: alternate-reverse;
+  animation-delay: -2.5s;
+}
+.state-waiting .orb-aura {
+  animation: waiting-flow 6s ease-in-out infinite reverse;
+  opacity: 0.2;
+}
+.intensity-low.state-waiting .orb-wave {
+  animation-duration: 9s;
+  opacity: 0.4;
+}
+.intensity-high.state-waiting .orb-wave {
+  animation-duration: 3.5s;
+}
+@keyframes waiting-flow {
+  0%,
+  100% {
+    border-radius: 48% 52% 51% 49% / 50% 47% 53% 50%;
+    transform: scale(0.98) rotate(-3deg);
+  }
+  33% {
+    border-radius: 55% 45% 48% 52% / 45% 54% 46% 55%;
+    transform: scale(1.025) rotate(3deg);
+  }
+  66% {
+    border-radius: 46% 54% 55% 45% / 54% 46% 54% 46%;
+    transform: scale(1) rotate(-2deg);
+  }
+}
+@keyframes wave-flow {
+  from {
+    transform: translate(-8%, 12%) rotate(-28deg);
+    border-radius: 40% 60% 45% 55% / 55% 40% 60% 45%;
+  }
+  to {
+    transform: translate(8%, -8%) rotate(42deg);
+    border-radius: 60% 40% 55% 45% / 40% 60% 45% 55%;
+  }
+}
 .state-waiting .orb-orbit {
   border-top-color: #ff9b4655;
   animation: swirl 12s linear infinite;

@@ -4,6 +4,7 @@ import { WakePhraseDetector } from "./WakePhraseDetector";
 export class ActionCaptureService {
   private buffer = "";
   private listening = false;
+  private pendingTrigger = "";
   private detector = new WakePhraseDetector();
   get active(): boolean {
     return this.listening;
@@ -12,11 +13,17 @@ export class ActionCaptureService {
     return this.buffer;
   }
   observePartial(text: string): boolean {
-    if (!this.listening && this.detector.detect(text)) this.listening = true;
+    if (
+      !this.listening &&
+      this.detector.detect(`${this.pendingTrigger} ${text}`)
+    )
+      this.listening = true;
     return this.listening;
   }
   accept(text: string): { woke: boolean; previous?: string } {
-    const match = this.detector.detect(text);
+    const combined = `${this.pendingTrigger} ${text}`.trim();
+    const match = this.detector.detect(text) || this.detector.detect(combined);
+    this.pendingTrigger = "";
     if (match) {
       const previous =
         this.listening && this.buffer.trim() ? this.buffer.trim() : undefined;
@@ -25,12 +32,16 @@ export class ActionCaptureService {
       return { woke: true, previous };
     }
     if (this.listening) this.buffer = `${this.buffer} ${text}`.trim();
+    else
+      this.pendingTrigger =
+        /\btake(?:[\s,]+this)?[\s,.:;!—-]*$/i.exec(combined)?.[0] || "";
     return { woke: false };
   }
   flush(): string {
     const text = this.buffer.trim();
     this.buffer = "";
     this.listening = false;
+    this.pendingTrigger = "";
     return text;
   }
 }
