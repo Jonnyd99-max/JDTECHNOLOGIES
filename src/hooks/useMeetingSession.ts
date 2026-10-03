@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { AudioCaptureService } from "../services/audio/AudioCaptureService";
 import { createTranscriptionProvider } from "../services/audio/createTranscriptionProvider";
-import { WakePhraseDetector } from "../services/lumo/WakePhraseDetector";
 import { ActionCaptureService } from "../services/lumo/ActionCaptureService";
 import { DeterministicActionParser } from "../services/lumo/ActionParser";
 import { useStore } from "../storage/AppStore";
@@ -62,6 +61,9 @@ export function useMeetingSession() {
     const instruction = captureBuffer.current.flush();
     if (!instruction) {
       setState(listening.current ? "waiting" : "idle");
+      setMessage(
+        "No action instruction heard. Say “Lumo, James needs to check the schedule.”",
+      );
       return;
     }
     // Persist synchronously before visual feedback so ending/closing cannot lose a pending action.
@@ -141,7 +143,11 @@ export function useMeetingSession() {
         throw new Error(
           "Speech recognition is unavailable here. Add actions manually, or use Chrome on Android.",
         );
-      if (!provider.current.managesMicrophone) await audio.current.start();
+      if (!provider.current.managesMicrophone) {
+        await audio.current.start();
+        // Recognition owns its own microphone. Release the permission probe.
+        audio.current.stop();
+      }
       if (!mounted.current || requestGeneration !== generation.current) {
         audio.current.stop();
         return;
@@ -153,8 +159,8 @@ export function useMeetingSession() {
           setPartial(text);
           if (
             text &&
-            (captureBuffer.current.active ||
-              new WakePhraseDetector().detect(text))
+            settings.current.wakePhrase &&
+            captureBuffer.current.observePartial(text)
           ) {
             setState("recording");
             setMessage("Listening…");
@@ -196,6 +202,7 @@ export function useMeetingSession() {
           : "Transcribing · wake phrase disabled",
       );
     } catch (error) {
+      if (!mounted.current || requestGeneration !== generation.current) return;
       audio.current.stop();
       provider.current.stopListening();
       listening.current = false;

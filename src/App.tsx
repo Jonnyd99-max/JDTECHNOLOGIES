@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useAppUpdate } from "./hooks/useAppUpdate";
 import {
   HashRouter,
   Link,
@@ -26,6 +27,7 @@ function Shell() {
   const { settings, error, clearError } = useStore();
   const location = useLocation();
   const inMeeting = location.pathname === "/lumo/meeting";
+  const { needRefresh, updateApp } = useAppUpdate();
   const [online, setOnline] = useState(navigator.onLine);
   useEffect(() => {
     const media = matchMedia("(prefers-color-scheme: dark)");
@@ -93,7 +95,25 @@ function Shell() {
           </span>
         </nav>
       </header>
-      <main id="main" tabIndex={-1} className={inMeeting ? "main meeting-main" : "main"}>
+      <main
+        id="main"
+        tabIndex={-1}
+        className={inMeeting ? "main meeting-main" : "main"}
+      >
+        {needRefresh && (
+          <div className="banner" role="status">
+            <span>
+              {inMeeting
+                ? "An app update is ready. End your meeting to apply it."
+                : "An app update is ready."}
+            </span>
+            {!inMeeting && (
+              <button className="button secondary small" onClick={updateApp}>
+                Update app
+              </button>
+            )}
+          </div>
+        )}
         {!online && (
           <div className="banner">
             <WifiOff size={17} />

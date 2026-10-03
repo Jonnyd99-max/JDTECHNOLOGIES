@@ -12,7 +12,12 @@ export class WakePhraseDetector {
         instruction: text.slice(match.index + match[0].length).trim(),
         phrase: match[0].trim(),
       };
-    const single = /\b(?:lumo|loomo)\b[\s,.:;!—-]*$/i.exec(text);
-    return single ? { instruction: "", phrase: single[0].trim() } : null;
+    const single = /\b(?:lumo|luma|lum0|loomo)\b[\s,.:;!—-]*/i.exec(text);
+    return single
+      ? {
+          instruction: text.slice(single.index + single[0].length).trim(),
+          phrase: single[0].trim(),
+        }
+      : null;
   }
 }

@@ -88,6 +88,17 @@ export function MeetingScreen() {
         <p className="muted status-detail" role="status">
           {session.message}
         </p>
+        <p className="muted status-detail">
+          {session.partial || session.meeting.transcript.at(-1)?.text
+            ? `Heard: “${session.partial || session.meeting.transcript.at(-1)?.text}”`
+            : "Recognised speech will appear here."}
+        </p>
+        {settings.wakePhrase && (
+          <p className="muted status-detail">
+            Say “Lumo, James needs to check the schedule.” Then pause to save
+            the action.
+          </p>
+        )}
         {!session.voice && (
           <button className="button secondary" onClick={enable}>
             <Mic size={18} />

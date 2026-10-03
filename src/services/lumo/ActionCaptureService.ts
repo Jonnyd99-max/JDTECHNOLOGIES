@@ -11,6 +11,10 @@ export class ActionCaptureService {
   get instruction(): string {
     return this.buffer;
   }
+  observePartial(text: string): boolean {
+    if (!this.listening && this.detector.detect(text)) this.listening = true;
+    return this.listening;
+  }
   accept(text: string): { woke: boolean; previous?: string } {
     const match = this.detector.detect(text);
     if (match) {

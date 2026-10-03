@@ -22,6 +22,15 @@ describe("wake phrases", () => {
   });
   it("supports standalone wake word", () =>
     expect(detector.detect("Lumo!")?.instruction).toBe(""));
+  it.each(["Lumo", "Luma", "Loomo"])(
+    "captures an instruction directly after %s",
+    (word) => {
+      expect(
+        detector.detect(`${word} Olivia needs to get ready for bed`)
+          ?.instruction,
+      ).toBe("Olivia needs to get ready for bed");
+    },
+  );
 });
 describe("action parsing", () => {
   const parser = new DeterministicActionParser();
@@ -50,6 +59,20 @@ describe("action parsing", () => {
     expect(parser.parse("Check the schedule", "m").owner).toBe("Unassigned"));
 });
 describe("action capture boundaries", () => {
+  it("arms from interim wake text without saving interim instructions", () => {
+    const capture = new ActionCaptureService();
+    expect(capture.observePartial("Lumo")).toBe(true);
+    capture.observePartial("Lumo Olivia needs");
+    expect(capture.instruction).toBe("");
+    capture.accept("Olivia needs to get ready for bed");
+    expect(capture.flush()).toBe("Olivia needs to get ready for bed");
+  });
+  it("does not duplicate an interim phrase repeated in the final result", () => {
+    const capture = new ActionCaptureService();
+    capture.observePartial("Lumo Olivia needs");
+    capture.accept("Lumo Olivia needs to get ready for bed");
+    expect(capture.flush()).toBe("Olivia needs to get ready for bed");
+  });
   it("combines separate speech events and ignores conversation after flush", () => {
     const capture = new ActionCaptureService();
     capture.accept("Lumo take this action.");
