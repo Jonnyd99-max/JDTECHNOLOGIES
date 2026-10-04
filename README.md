@@ -21,7 +21,9 @@ JD Technology is a mobile-first, modular business workspace. Its first module, *
 
 Open **White Board Clean Up** from the workspace. Take or upload a whiteboard or paper photo, adjust cleanup strength, preserve marker colours or use monochrome, rotate in quarter turns, and trim the edges. Compare with the original and download the cleaned PNG before leaving the screen. Reduce strength if faint writing fades.
 
-Processing runs locally without an AI API, account, upload, or per-photo charge. Photos are held in memory, not saved to meeting history. Inputs are limited to 25 MB and resized to a maximum of 2,000 pixels on the longest side. Camera/file selection depends on device support; unsupported photo formats show an error. This release does not extract text, redraw diagrams, correct perspective, or recover obscured writing.
+Processing runs locally without an AI API, account, photo upload, or per-photo charge. Photos are held in memory, not saved to meeting history. Inputs are limited to 25 MB and resized to a maximum of 2,000 pixels on the longest side. Camera/file selection depends on device support; unsupported photo formats show an error. This release does not redraw diagrams, correct perspective, or recover obscured writing.
+
+**Extract text** uses Tesseract.js in a browser worker. Choose scattered notes for whiteboards or document layout for paper, then review the editable English text and copy or download a `.txt` file. Internet access is required to load the free OCR core and English language data from jsDelivr; photos are never sent to the CDN. Language data may be cached locally, but fully offline OCR is not guaranteed. Printed text works best; handwriting, arrows and diagram structure are not reliably recognized. Adjusting or replacing the image clears extracted text. Cancel stops the current job and suppresses late results; a worker that is still initializing is released when initialization finishes. Jobs time out after two minutes.
 
 ## Run locally
 

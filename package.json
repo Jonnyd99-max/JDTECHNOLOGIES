@@ -13,24 +13,25 @@
     "android:add": "cap add android"
   },
   "dependencies": {
+    "@capacitor/android": "^7.4.0",
+    "@capacitor/clipboard": "^7.0.0",
+    "@capacitor/core": "^7.4.0",
+    "lucide-react": "^0.468.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.6.0",
-    "lucide-react": "^0.468.0",
-    "@capacitor/core": "^7.4.0",
-    "@capacitor/android": "^7.4.0",
-    "@capacitor/clipboard": "^7.0.0"
+    "tesseract.js": "6.0.1"
   },
   "devDependencies": {
     "@capacitor/cli": "^7.4.0",
+    "@types/node": "^22.15.0",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
-    "@types/node": "^22.15.0",
     "@vitejs/plugin-react": "^4.5.0",
+    "jsdom": "^26.1.0",
     "typescript": "~5.8.3",
     "vite": "^6.3.5",
     "vite-plugin-pwa": "^1.0.0",
-    "vitest": "^4.1.11",
-    "jsdom": "^26.1.0"
+    "vitest": "^4.1.11"
   }
 }

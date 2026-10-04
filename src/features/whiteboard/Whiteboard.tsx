@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Camera, Upload, RotateCw, Download } from "lucide-react";
 import { cleanPixels } from "./cleanup";
+import { TextExtraction } from "./TextExtraction";
 
 export function WhiteboardScreen() {
   const [source, setSource] = useState<HTMLImageElement | null>(null);
@@ -44,6 +45,7 @@ export function WhiteboardScreen() {
   }
   useEffect(() => {
     if (!source) return;
+    setResult("");
     const timer = window.setTimeout(() => {
       try {
         const canvas = document.createElement("canvas");
@@ -85,6 +87,7 @@ export function WhiteboardScreen() {
     {source ? <><div className="board-comparison"><figure><figcaption>Original</figcaption><img src={original} alt="Original uploaded whiteboard or paper" /></figure><figure><figcaption>Cleaned image</figcaption>{result && <img src={result} alt="Cleaned whiteboard or paper" />}</figure></div>
       {result && <a className="button primary" href={result} download="white-board-cleaned.png"><Download size={18} /> Download cleaned image</a>}
       <p className="muted">Check faint writing before saving. Reduce strength if details fade. Photos are resized to a maximum of 2,000 pixels on the longest side.</p></> : <div className="board-empty"><Camera size={40} /><h2>Give your notes a clearer background.</h2><p>Photograph the board or paper straight on, with even lighting. Include all the writing you want to keep.</p></div>}
-    <p className="muted">This version improves the photo and preserves your handwriting and diagrams. Text extraction and diagram redrawing are not included.</p>
+    {result && !busy && <TextExtraction key={result} image={result} />}
+    <p className="muted">Review extracted text against your photo. Diagram redrawing is not included.</p>
   </div>;
 }
