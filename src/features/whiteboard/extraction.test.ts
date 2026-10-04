@@ -2,11 +2,25 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 const { create, recognize, terminate, parameters } = vi.hoisted(() => ({ create: vi.fn(), recognize: vi.fn(), terminate: vi.fn(), parameters: vi.fn() }));
 vi.mock("tesseract.js", () => ({ createWorker: create, PSM: { AUTO: "3", SPARSE_TEXT: "11", SINGLE_BLOCK: "6", SINGLE_LINE: "7" } }));
+vi.mock("./documentImage", () => ({ prepareDocumentImage: vi.fn(async (image: string) => `prepared:${image}`) }));
 import { startExtraction } from "./extraction";
 const worker = { recognize, terminate, setParameters: parameters };
 afterEach(() => { vi.resetAllMocks(); vi.useRealTimers(); });
 function ready() { create.mockResolvedValue(worker); parameters.mockResolvedValue({}); terminate.mockResolvedValue({}); }
 describe("on-device text extraction", () => {
+  it("uses the original form and keeps its prepared reading first even with lower confidence", async () => {
+    ready(); recognize.mockResolvedValueOnce({ data: { text: "Complete this form", confidence: 75 } }).mockResolvedValueOnce({ data: { text: "Completa tis a of", confidence: 90 } });
+    const output = await startExtraction("cleaned", "form", vi.fn(), "original").promise;
+    expect(recognize).toHaveBeenNthCalledWith(1, "prepared:original", { rotateAuto: true });
+    expect(output[0].text).toBe("Complete this form");
+    expect(parameters).toHaveBeenCalledWith({ tessedit_pageseg_mode: "3", user_defined_dpi: "300" });
+  });
+  it("can prepare an original form without running a comparison pass", async () => {
+    ready(); recognize.mockResolvedValue({ data: { text: "Section 1", confidence: 80 } });
+    await startExtraction("cleaned", "form", vi.fn(), "original", false).promise;
+    expect(recognize).toHaveBeenCalledOnce();
+    expect(recognize).toHaveBeenCalledWith("prepared:original", { rotateAuto: true });
+  });
   it("reads scattered notes and releases the worker", async () => {
     ready(); recognize.mockResolvedValue({ data: { text: "  Check pump\nFriday  ", confidence: 80 } });
     expect(await startExtraction("photo", "notes", vi.fn()).promise).toEqual([{ text: "Check pump\nFriday", confidence: 80, source: "Cleaned photo" }]);

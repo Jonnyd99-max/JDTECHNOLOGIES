@@ -27,6 +27,8 @@ Processing runs locally without an AI API, account, photo upload, or per-photo c
 
 For difficult handwriting, use **Crop to the writing** to trim each original-photo edge independently, and try **Handwritten block** or **Single line**. These are layout settings for the same OCR engine, not a handwriting-trained model. By default extraction reads both the cropped/rotated original and cleaned photo, applies automatic deskew, and selects the nonempty result with higher engine confidence. **Compare both readings** preserves the alternatives for manual review. Confidence is not measured transcription accuracy; these changes do not establish improved accuracy on a user's handwriting without testing their photos. Disable comparison for a faster single pass.
 
+**Printed form / table** is the default extraction layout. It bypasses the whiteboard cleanup for its primary reading, normalizes the original photo to grayscale, enlarges small input within the image limits, adds a white border, and uses automatic document layout. Its prepared reading is preferred over the comparison regardless of relative confidence (unless empty). This was checked locally on a supplied ruled-form photo using eight printed phrases, all recovered; it is not validation of handwritten names, dates, tick marks, signatures or table structure.
+
 ## Run locally
 
 Install **Node.js 22 LTS** (including npm). In this folder:
