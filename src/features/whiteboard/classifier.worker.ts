@@ -1,5 +1,6 @@
 import { InferenceSession, Tensor, env } from "onnxruntime-web/wasm";
-import { contextCandidates, regionKind, type DetectedLine, type Box } from "./mixedRegions";
+import { stableLineKind, type DetectedLine, type Box } from "./mixedRegions";
+import { hasTextInk } from "./textInk";
 env.wasm.numThreads = 1;
 env.wasm.proxy = false;
 env.wasm.wasmPaths = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.22.0-dev.20250409-89f8206ba4/dist/";
@@ -16,9 +17,9 @@ self.onmessage = async (event: MessageEvent<{ image: string; lines: DetectedLine
     context.imageSmoothingQuality = "high";
     const total = event.data.lines.length;
     const probabilities: number[][] = [];
+    const skipped: boolean[] = [];
     let done = 0;
-    const classify = async (box: Box) => {
-      const pad = Math.max(6, Math.min(12, Math.round((box.y1 - box.y0) * .2)));
+    const classify = async (box: Box, pad: number) => {
       const x = Math.max(0, box.x0 - pad), y = Math.max(0, box.y0 - pad);
       const width = Math.min(image!.width - x, box.x1 - box.x0 + pad * 2);
       const height = Math.min(image!.height - y, box.y1 - box.y0 + pad * 2);
@@ -35,27 +36,28 @@ self.onmessage = async (event: MessageEvent<{ image: string; lines: DetectedLine
       return probability;
     };
     for (const line of event.data.lines) {
-      const output: number[] = [];
-      const lineProbability = await classify(line.bbox);
-      if (lineProbability <= .2 || lineProbability >= .8) {
-        // The model was trained on line crops. Split words only for mixed/ambiguous lines.
-        line.words.forEach(() => output.push(lineProbability));
-      } else {
-        for (const word of line.words) output.push(await classify(word.bbox));
+      const b = line.bbox, pad = 6;
+      const x = Math.max(0, b.x0 - pad), y = Math.max(0, b.y0 - pad);
+      const w = Math.min(image.width - x, b.x1 - b.x0 + pad * 2), h = Math.min(image.height - y, b.y1 - b.y0 + pad * 2);
+      const scale = Math.min(1, 1024 / w, 256 / h);
+      const inkCanvas = new OffscreenCanvas(Math.max(1, Math.round(w * scale)), Math.max(1, Math.round(h * scale)));
+      const inkContext = inkCanvas.getContext("2d", { willReadFrequently: true });
+      if (!inkContext) throw new Error("Image processing unavailable");
+      inkContext.drawImage(image, x, y, w, h, 0, 0, inkCanvas.width, inkCanvas.height);
+      const usable = hasTextInk(inkContext.getImageData(0, 0, inkCanvas.width, inkCanvas.height).data, inkCanvas.width, inkCanvas.height);
+      skipped.push(!usable);
+      let probability = .5;
+      if (usable) {
+        const first = await classify(b, 6), second = await classify(b, 8);
+        const kind = stableLineKind(first, second, line.field);
+        probability = kind === "printed" ? .01 : kind === "handwritten" ? .99 : .5;
       }
       done++;
       self.postMessage({ type: "progress", message: `Checking printed and handwritten lines… ${done} of ${total}` });
-      probabilities.push(output);
+      probabilities.push(line.words.map(() => probability));
     }
-    // Short fragments are ambiguous; recheck with nearby text of a known type.
-    // Only the model can resolve the ambiguity, never OCR confidence alone.
-    const contexts = contextCandidates(event.data.lines, probabilities);
-    for (const [index, candidate] of contexts.entries()) {
-      self.postMessage({ type: "progress", message: `Checking ambiguous regions… ${index + 1} of ${contexts.length}` });
-      const probability = await classify(candidate.bbox);
-      if (regionKind(probability) === candidate.kind) candidate.indices.forEach(i => { probabilities[candidate.line][i] = probability; });
-    }
-    self.postMessage({ type: "result", probabilities });
+    // Do not classify isolated word fragments: this model was trained on lines.
+    self.postMessage({ type: "result", probabilities, skipped });
   } catch { self.postMessage({ type: "error" }); }
   finally { image?.close(); await session?.release(); }
 };

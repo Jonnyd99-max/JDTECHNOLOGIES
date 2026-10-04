@@ -15,6 +15,11 @@ transcription accuracy. Tesseract localization can miss writing. No user images
 or extracted text are included in this model. The optional conversion tool is
 `scripts/export-text-classifier.py`; it requires torch, torchvision, onnx and numpy.
 
+The application now uses only whole-line/field classification, checks two margins,
+rejects obvious rules and blank/faint crops, and withholds ambiguous classifications.
+It no longer routes isolated word fragments to TrOCR. All handwriting readings
+require review before inclusion in notes, even when two attempts agree.
+
 ## MIT License
 
 Copyright (c) VItaldob

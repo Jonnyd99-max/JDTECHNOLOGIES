@@ -1,19 +1,25 @@
 export interface Box { x0: number; y0: number; x1: number; y1: number }
 export interface DetectedWord { bbox: Box; text: string; confidence: number }
-export interface DetectedLine { words: DetectedWord[]; bbox: Box; row?: number }
+export interface DetectedLine { words: DetectedWord[]; bbox: Box; row?: number; field?: boolean }
 export type RegionKind = "printed" | "handwritten" | "uncertain";
-export interface MixedRegion { bbox: Box; kind: RegionKind; text: string; printedText: string; confidence: number; line: number; row?: number }
+export interface MixedRegion { bbox: Box; kind: RegionKind; text: string; printedText: string; confidence: number; line: number; row?: number; omitted?: string; alternatives?: string[]; accepted?: boolean }
 
 export function splitLabelLines(lines: DetectedLine[]): DetectedLine[] {
   return [...lines].sort((a, b) => a.bbox.y0 - b.bbox.y0 || a.bbox.x0 - b.bbox.x0).flatMap((line, row) => {
     const parts: DetectedLine[] = [];
     let words: DetectedWord[] = [];
+    let field = false;
     const flush = () => {
       if (!words.length) return;
-      parts.push({ row, words, bbox: { x0: Math.min(...words.map(w => w.bbox.x0)), y0: Math.min(...words.map(w => w.bbox.y0)), x1: Math.max(...words.map(w => w.bbox.x1)), y1: Math.max(...words.map(w => w.bbox.y1)) } });
+      parts.push({ row, field, words, bbox: { x0: Math.min(...words.map(w => w.bbox.x0)), y0: Math.min(...words.map(w => w.bbox.y0)), x1: Math.max(...words.map(w => w.bbox.x1)), y1: Math.max(...words.map(w => w.bbox.y1)) } });
       words = [];
     };
-    line.words.forEach(word => { words.push(word); if (/[:：]\s*$/.test(word.text)) flush(); });
+    line.words.forEach(word => {
+      const previous = words[words.length - 1];
+      if (previous && word.bbox.x0 - previous.bbox.x1 > Math.max(word.bbox.y1 - word.bbox.y0, previous.bbox.y1 - previous.bbox.y0) * 1.3) { flush(); field = false; }
+      words.push(word);
+      if (/[:：]\s*$/.test(word.text)) { flush(); field = true; }
+    });
     flush(); return parts;
   });
 }
@@ -21,14 +27,10 @@ export function splitLabelLines(lines: DetectedLine[]): DetectedLine[] {
 export function regionKind(handwritten: number): RegionKind {
   return handwritten >= .8 ? "handwritten" : handwritten <= .2 ? "printed" : "uncertain";
 }
-export function contextCandidates(lines: DetectedLine[], probabilities: number[][]) {
-  const regions = mergeRegions(lines, probabilities);
-  return regions.flatMap((region, index) => {
-    if (region.kind !== "uncertain") return [];
-    const neighbour = [regions[index - 1], regions[index + 1]].find(other => other && other.line === region.line && other.kind !== "uncertain" && Math.max(region.bbox.x0 - other.bbox.x1, other.bbox.x0 - region.bbox.x1) <= Math.max(region.bbox.y1 - region.bbox.y0, other.bbox.y1 - other.bbox.y0) * 2);
-    if (!neighbour) return [];
-    return [{ line: region.line, kind: neighbour.kind, indices: lines[region.line].words.flatMap((word, i) => word.bbox.x0 >= region.bbox.x0 && word.bbox.x1 <= region.bbox.x1 ? [i] : []), bbox: { x0: Math.min(region.bbox.x0, neighbour.bbox.x0), y0: Math.min(region.bbox.y0, neighbour.bbox.y0), x1: Math.max(region.bbox.x1, neighbour.bbox.x1), y1: Math.max(region.bbox.y1, neighbour.bbox.y1) } }];
-  });
+export function stableLineKind(first: number, second: number, field = false): RegionKind {
+  if (first <= .2 && second <= .2) return "printed";
+  const required = field ? .8 : .95;
+  return first >= required && second >= required ? "handwritten" : "uncertain";
 }
 export function mergeRegions(lines: DetectedLine[], probabilities: number[][]): MixedRegion[] {
   const regions: MixedRegion[] = [];
@@ -54,9 +56,10 @@ export function mergeRegions(lines: DetectedLine[], probabilities: number[][]): 
 }
 export function mixedNotes(regions: MixedRegion[]) {
   const lines = new Map<number, string[]>();
-  for (const region of regions) {
+  for (const [index, region] of regions.entries()) {
+    if (region.omitted || region.kind === "uncertain") continue;
     const reading = region.text.trim();
-    const text = region.kind === "handwritten" ? `[Handwriting suggestion: ${reading || "unreadable"}]` : reading;
+    const text = region.kind === "handwritten" && !region.accepted ? handwritingMarker(index) : reading;
     if (!text) continue;
     const row = region.row ?? region.line;
     const line = lines.get(row) || [];
@@ -64,3 +67,4 @@ export function mixedNotes(regions: MixedRegion[]) {
   }
   return [...lines.values()].map(line => line.join(" ")).join("\n");
 }
+export function handwritingMarker(index: number) { return `[Handwriting region ${index + 1}: review needed]`; }
