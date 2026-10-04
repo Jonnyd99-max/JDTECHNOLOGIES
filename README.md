@@ -17,6 +17,12 @@ JD Technology is a mobile-first, modular business workspace. Its first module, *
 - Installable PWA with an offline shell; Capacitor Android project; GitHub Pages workflow.
 - Automated tests for speech capture boundaries, detection, parsing, formatting and storage.
 
+## White Board Clean Up
+
+Open **White Board Clean Up** from the workspace. Take or upload a whiteboard or paper photo, adjust cleanup strength, preserve marker colours or use monochrome, rotate in quarter turns, and trim the edges. Compare with the original and download the cleaned PNG before leaving the screen. Reduce strength if faint writing fades.
+
+Processing runs locally without an AI API, account, upload, or per-photo charge. Photos are held in memory, not saved to meeting history. Inputs are limited to 25 MB and resized to a maximum of 2,000 pixels on the longest side. Camera/file selection depends on device support; unsupported photo formats show an error. This release does not extract text, redraw diagrams, correct perspective, or recover obscured writing.
+
 ## Run locally
 
 Install **Node.js 22 LTS** (including npm). In this folder:

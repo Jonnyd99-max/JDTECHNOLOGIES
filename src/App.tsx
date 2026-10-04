@@ -23,6 +23,7 @@ import { MeetingScreen } from "./features/lumo/Meeting";
 import { HistoryScreen } from "./features/lumo/History";
 import { SummaryScreen } from "./features/lumo/Summary";
 import { SettingsScreen } from "./features/lumo/Settings";
+import { WhiteboardScreen } from "./features/whiteboard/Whiteboard";
 import { StoreProvider, useStore } from "./storage/AppStore";
 function Shell() {
   const { settings, error, clearError } = useStore();
@@ -54,7 +55,7 @@ function Shell() {
   }, []);
   useEffect(() => {
     window.scrollTo(0, 0);
-    document.title = `${location.pathname.startsWith("/lumo") ? "Lumo" : "JD Technology"} · JD Technology`;
+    document.title = `${location.pathname.startsWith("/whiteboard") ? "White Board Clean Up" : location.pathname.startsWith("/lumo") ? "Lumo" : "Workspace"} · JD Technology`;
   }, [location.pathname]);
   return (
     <div className="app-shell">
@@ -132,6 +133,7 @@ function Shell() {
         )}
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/whiteboard" element={<WhiteboardScreen />} />
           <Route path="/lumo" element={<LumoHome />} />
           <Route path="/lumo/meeting" element={<MeetingScreen />} />
           <Route path="/lumo/history" element={<HistoryScreen />} />

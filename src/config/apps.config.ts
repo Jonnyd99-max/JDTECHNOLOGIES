@@ -8,6 +8,15 @@ import {
 } from "lucide-react";
 export const apps = [
   {
+    id: "whiteboard",
+    name: "White Board Clean Up",
+    description: "Clearer whiteboards and paper notes",
+    icon: Sparkles,
+    route: "/whiteboard",
+    status: "active",
+    theme: "blue",
+  },
+  {
     id: "lumo",
     name: "Lumo",
     description: "Meeting Assistant",

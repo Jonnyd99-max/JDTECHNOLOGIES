@@ -1,0 +1,90 @@
+import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
+import { Camera, Upload, RotateCw, Download } from "lucide-react";
+import { cleanPixels } from "./cleanup";
+
+export function WhiteboardScreen() {
+  const [source, setSource] = useState<HTMLImageElement | null>(null);
+  const [original, setOriginal] = useState("");
+  const [result, setResult] = useState("");
+  const [strength, setStrength] = useState(.65);
+  const [colour, setColour] = useState(true);
+  const [rotation, setRotation] = useState(0);
+  const [crop, setCrop] = useState(0);
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const upload = useRef<HTMLInputElement>(null);
+  const camera = useRef<HTMLInputElement>(null);
+  const request = useRef(0);
+  useEffect(() => () => { request.current++; }, []);
+  async function load(file?: File) {
+    if (!file) return;
+    const id = ++request.current;
+    setError("");
+    if (!file.type.startsWith("image/") || file.size > 25 * 1024 * 1024) {
+      setError("Choose an image smaller than 25 MB."); return;
+    }
+    setBusy(true);
+    const url = URL.createObjectURL(file);
+    try {
+      const img = new Image(); img.src = url; await img.decode();
+      if (id !== request.current) return;
+      const canvas = document.createElement("canvas");
+      const scale = Math.min(1, 2000 / Math.max(img.width, img.height));
+      canvas.width = Math.max(1, Math.round(img.width * scale)); canvas.height = Math.max(1, Math.round(img.height * scale));
+      const context = canvas.getContext("2d");
+      if (!context) throw new Error();
+      context.fillStyle = "white"; context.fillRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(img, 0, 0, canvas.width, canvas.height);
+      const resized = new Image(); resized.src = canvas.toDataURL("image/png"); await resized.decode();
+      if (id !== request.current) return;
+      setOriginal(resized.src); setSource(resized); setRotation(0); setCrop(0);
+    } catch { if (id === request.current) setError("Could not open this photo. Try a JPG, PNG or WebP image."); }
+    finally { URL.revokeObjectURL(url); if (id === request.current) setBusy(false); }
+  }
+  useEffect(() => {
+    if (!source) return;
+    const timer = window.setTimeout(() => {
+      try {
+        const canvas = document.createElement("canvas");
+        const inset = crop / 100;
+        const w = Math.max(1, Math.round(source.width * (1 - inset * 2)));
+        const h = Math.max(1, Math.round(source.height * (1 - inset * 2)));
+        canvas.width = rotation % 2 ? h : w; canvas.height = rotation % 2 ? w : h;
+        const ctx = canvas.getContext("2d"); if (!ctx) throw new Error();
+        ctx.translate(canvas.width / 2, canvas.height / 2); ctx.rotate(rotation * Math.PI / 2);
+        ctx.drawImage(source, source.width * inset, source.height * inset, w, h, -w / 2, -h / 2, w, h);
+        const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        cleanPixels(pixels.data, canvas.width, canvas.height, strength, colour);
+        ctx.putImageData(pixels, 0, 0); setResult(canvas.toDataURL("image/png"));
+      } catch { setError("Could not process this image. Try a smaller photo."); setResult(""); }
+    }, 100);
+    return () => window.clearTimeout(timer);
+  }, [source, strength, colour, rotation, crop]);
+  return <div className="whiteboard-page">
+    <Link className="text-button" to="/">← Workspace</Link>
+    <div className="page-heading"><div><p className="eyebrow">PHOTO TO CLEARER NOTES</p><h1>White Board Clean Up</h1><p className="muted">Brighten the background and make your writing easier to read.</p></div></div>
+    <div className="board-controls">
+      <p>Free, on-device processing. Your photos stay on this device. Download your result before leaving this screen.</p>
+      <div className="inline-buttons">
+        <button className="button primary" disabled={busy} onClick={() => camera.current?.click()}><Camera size={18} /> Take a photo</button>
+        <button className="button secondary" disabled={busy} onClick={() => upload.current?.click()}><Upload size={18} /> Upload photo</button>
+      </div>
+      <input ref={upload} hidden type="file" accept="image/*" onChange={e => { void load(e.target.files?.[0]); e.target.value = ""; }} />
+      <input ref={camera} hidden type="file" accept="image/*" capture="environment" onChange={e => { void load(e.target.files?.[0]); e.target.value = ""; }} />
+      {busy && <p role="status">Opening photo…</p>}
+      {error && <p role="alert" className="banner error-banner">{error}</p>}
+      {source && <div className="board-settings">
+        <label>Cleanup strength: {Math.round(strength * 100)}%<input type="range" min="0" max="1" step=".05" value={strength} onChange={e => setStrength(Number(e.target.value))} /></label>
+        <label>Trim edges: {crop}%<input type="range" min="0" max="20" step="1" value={crop} onChange={e => setCrop(Number(e.target.value))} /></label>
+        <label><input type="checkbox" checked={colour} onChange={e => setColour(e.target.checked)} /> Keep marker colours</label>
+        <button className="button secondary" onClick={() => setRotation((rotation + 1) % 4)}><RotateCw size={18} /> Rotate</button>
+        <button className="text-button" onClick={() => { setStrength(.65); setCrop(0); setRotation(0); setColour(true); }}>Reset adjustments</button>
+      </div>}
+    </div>
+    {source ? <><div className="board-comparison"><figure><figcaption>Original</figcaption><img src={original} alt="Original uploaded whiteboard or paper" /></figure><figure><figcaption>Cleaned image</figcaption>{result && <img src={result} alt="Cleaned whiteboard or paper" />}</figure></div>
+      {result && <a className="button primary" href={result} download="white-board-cleaned.png"><Download size={18} /> Download cleaned image</a>}
+      <p className="muted">Check faint writing before saving. Reduce strength if details fade. Photos are resized to a maximum of 2,000 pixels on the longest side.</p></> : <div className="board-empty"><Camera size={40} /><h2>Give your notes a clearer background.</h2><p>Photograph the board or paper straight on, with even lighting. Include all the writing you want to keep.</p></div>}
+    <p className="muted">This version improves the photo and preserves your handwriting and diagrams. Text extraction and diagram redrawing are not included.</p>
+  </div>;
+}
