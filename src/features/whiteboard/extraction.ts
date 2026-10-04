@@ -1,14 +1,17 @@
 import { createWorker, PSM, type Worker } from "tesseract.js";
 import workerUrl from "tesseract.js/dist/worker.min.js?url";
 
-export type TextLayout = "document" | "notes";
-export function startExtraction(image: string, layout: TextLayout, progress: (message: string) => void) {
+export type TextLayout = "document" | "notes" | "block" | "line";
+export interface ExtractionCandidate { text: string; confidence: number; source: string }
+export function startExtraction(image: string, layout: TextLayout, progress: (message: string) => void, original?: string) {
   let worker: Worker | undefined;
   let cancelled = false;
   let settled = false;
   let rejectJob: (reason: Error) => void = () => {};
   const stopWorker = () => { if (worker) { void worker.terminate().catch(() => {}); worker = undefined; } };
-  const promise = new Promise<string>((resolve, reject) => {
+  let pass = 1;
+  const images = [{ image, source: "Cleaned photo" }, ...(original && original !== image ? [{ image: original, source: "Original photo" }] : [])];
+  const promise = new Promise<ExtractionCandidate[]>((resolve, reject) => {
     rejectJob = reject;
     void (async () => {
       try {
@@ -17,16 +20,24 @@ export function startExtraction(image: string, layout: TextLayout, progress: (me
           workerPath: new URL(workerUrl, window.location.href).href,
           logger: event => {
             if (!cancelled && !settled) progress(event.status === "recognizing text"
-              ? `Reading text… ${Math.round(event.progress * 100)}%`
+              ? `Reading photo ${pass} of ${images.length}… ${Math.round(event.progress * 100)}%`
               : "Loading English text reader…");
           },
           errorHandler: () => { if (!settled) { settled = true; reject(new Error("OCR failed")); stopWorker(); } },
         });
         worker = created;
         if (cancelled || settled) { stopWorker(); return; }
-        await worker.setParameters({ tessedit_pageseg_mode: layout === "notes" ? PSM.SPARSE_TEXT : PSM.AUTO });
-        const { data } = await worker.recognize(image);
-        if (!cancelled && !settled) { settled = true; resolve(data.text.trim()); }
+        const modes = { notes: PSM.SPARSE_TEXT, document: PSM.AUTO, block: PSM.SINGLE_BLOCK, line: PSM.SINGLE_LINE };
+        await worker.setParameters({ tessedit_pageseg_mode: modes[layout], user_defined_dpi: "300" });
+        const results: ExtractionCandidate[] = [];
+        for (const input of images) {
+          if (cancelled || settled || !worker) return;
+          const { data } = await worker.recognize(input.image, { rotateAuto: true });
+          results.push({ text: data.text.trim(), confidence: Number.isFinite(data.confidence) ? data.confidence : 0, source: input.source });
+          pass++;
+        }
+        results.sort((a, b) => Number(Boolean(b.text)) - Number(Boolean(a.text)) || b.confidence - a.confidence);
+        if (!cancelled && !settled) { settled = true; resolve(results); }
       } catch (error) {
         if (!settled) { settled = true; reject(error); }
       } finally { stopWorker(); }

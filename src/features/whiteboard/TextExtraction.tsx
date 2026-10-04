@@ -1,26 +1,28 @@
 import { useEffect, useRef, useState } from "react";
 import { Copy, Download, ScanText } from "lucide-react";
 import { copyText } from "../../services/clipboard";
-import { startExtraction, type TextLayout } from "./extraction";
+import { startExtraction, type TextLayout, type ExtractionCandidate } from "./extraction";
 
-export function TextExtraction({ image }: { image: string }) {
+export function TextExtraction({ image, original }: { image: string; original: string }) {
   const [layout, setLayout] = useState<TextLayout>("notes");
   const [text, setText] = useState("");
   const [running, setRunning] = useState(false);
   const [message, setMessage] = useState("");
   const [complete, setComplete] = useState(false);
+  const [compare, setCompare] = useState(true);
+  const [candidates, setCandidates] = useState<ExtractionCandidate[]>([]);
   const job = useRef<ReturnType<typeof startExtraction> | null>(null);
   const mounted = useRef(true);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; job.current?.cancel(); }; }, []);
   async function extract() {
     if (job.current) return;
     setRunning(true); setComplete(false); setMessage("");
-    const active = startExtraction(image, layout, setMessage); job.current = active;
+    const active = startExtraction(image, layout, setMessage, compare ? original : undefined); job.current = active;
     try {
       const output = await active.promise;
       if (!mounted.current || job.current !== active) return;
-      setText(output); setComplete(true);
-      setMessage(output ? "Text extracted. Review and correct it below." : "No readable text found. Try rotating the photo, reducing cleanup strength, or changing the layout.");
+      setCandidates(output); setText(output[0]?.text || ""); setComplete(true);
+      setMessage(output[0]?.text ? `Text extracted from ${output[0].source.toLowerCase()}. Review and correct it below.${output[0].confidence < 65 ? " The reader is unsure about much of this text." : ""}` : "No readable text found. Crop to a single line and try the Single line layout.");
     } catch (error) {
       if (!mounted.current || job.current !== active) return;
       setMessage(error instanceof DOMException && error.name === "AbortError"
@@ -42,14 +44,16 @@ export function TextExtraction({ image }: { image: string }) {
   }
   return <section className="board-controls" aria-labelledby="extract-heading">
     <h2 id="extract-heading">Extract text</h2>
-    <p>Read English text from the cleaned image, then edit and save your notes. Printed text works best; handwriting and diagrams may not read accurately.</p>
+    <p>For handwriting, crop to a small section and try Handwritten block or Single line. Clear, separated letters work best; joined-up writing may still need manual correction.</p>
     <p className="muted">Free processing on your device. Internet is needed to load the OCR engine and English language data. Your photo is not uploaded. Changing the image adjustments clears this text, so copy or download it first.</p>
     <div className="inline-buttons">
-      <label className="board-layout">Text layout <select value={layout} disabled={running} onChange={e => setLayout(e.target.value as TextLayout)}><option value="notes">Whiteboard / scattered notes</option><option value="document">Paper / document</option></select></label>
+      <label className="board-layout">Text layout <select value={layout} disabled={running} onChange={e => setLayout(e.target.value as TextLayout)}><option value="notes">Whiteboard / scattered notes</option><option value="document">Paper / document</option><option value="block">Handwritten block</option><option value="line">Single line</option></select></label>
+      <label><input type="checkbox" checked={compare} disabled={running} onChange={e => setCompare(e.target.checked)} /> Compare original and cleaned photo (slower)</label>
       <button className="button primary" disabled={running} onClick={() => void extract()}><ScanText size={18} />{complete ? "Extract again" : "Extract text"}</button>
       {running && <button className="button secondary" onClick={() => job.current?.cancel()}>Cancel</button>}
     </div>
     <p role="status" aria-live="polite">{message}</p>
+    {complete && candidates.length > 1 && <details><summary>Compare both readings</summary><p className="muted">The reader’s confidence chooses the first result; it does not guarantee accuracy. Copy useful words from either reading into your editable notes.</p>{candidates.map(candidate => <div key={candidate.source}><h3>{candidate.source}</h3><pre className="board-reading">{candidate.text || "No text detected."}</pre></div>)}</details>}
     {(complete || text) && <><label htmlFor="extracted-notes">Editable notes</label><textarea id="extracted-notes" className="board-text" value={text} disabled={running} onChange={e => setText(e.target.value)} rows={12} />
       <div className="inline-buttons"><button className="button secondary" disabled={!text.trim() || running} onClick={() => void copy()}><Copy size={18} /> Copy text</button><button className="button secondary" disabled={!text.trim() || running} onClick={download}><Download size={18} /> Download notes</button></div></>}
   </section>;

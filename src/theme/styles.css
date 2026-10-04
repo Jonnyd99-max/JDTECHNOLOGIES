@@ -1978,3 +1978,7 @@ form textarea,
 .board-layout { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
 .board-layout select { max-width: 100%; padding: 12px; border-radius: 8px; background: var(--input); color: inherit; border: 1px solid var(--border); font: inherit; }
 
+.board-crop { flex-basis: 100%; }
+.board-crop summary { cursor: pointer; padding: 12px 0; font-weight: 600; }
+.board-crop label { margin: 12px 0; text-transform: capitalize; }
+.board-reading { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; padding: 12px; border: 1px solid var(--border); border-radius: 8px; }
