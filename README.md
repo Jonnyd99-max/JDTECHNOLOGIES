@@ -29,6 +29,10 @@ For difficult handwriting, use **Crop to the writing** to trim each original-pho
 
 **Printed form / table** is the default extraction layout. It bypasses the whiteboard cleanup for its primary reading, normalizes the original photo to grayscale, enlarges small input within the image limits, adds a white border, and uses automatic document layout. Its prepared reading is preferred over the comparison regardless of relative confidence (unless empty). This was checked locally on a supplied ruled-form photo using eight printed phrases, all recovered; it is not validation of handwritten names, dates, tick marks, signatures or table structure.
 
+**Handwriting reader (experimental)** is a separate, opt-in single-line reader using [TrOCR small handwritten](https://huggingface.co/Xenova/trocr-small-handwritten) through Transformers.js 3.8.1. Open the selector, drag a box (or tap two opposite corners) around one handwritten line without printed labels/borders, inspect the crop, and press **Read handwriting**. Numeric selection inputs provide a keyboard alternative. Edit, copy or download the suggested reading; it never fills or overwrites printed-form results automatically.
+
+The pinned, quantized model downloads approximately 68 MB of model/config files on first use, plus the WASM runtime. Public assets come from Hugging Face and jsDelivr; the selected image is passed only to a local module worker. Browser caching can reduce subsequent downloads but offline availability is not guaranteed. WASM uses one thread so GitHub Pages and installed PWAs do not require cross-origin isolation. Cancel, navigation and a five-minute timeout terminate the worker. On one supplied sample the cropped handwritten name matched in both local Node and browser tests, while the birth-date test failed. This is limited sample evidence, not a handwriting accuracy benchmark or confirmation that any unreviewed name, date, number or signature is correct. Actual phone performance still needs device testing.
+
 ## Run locally
 
 Install **Node.js 22 LTS** (including npm). In this folder:

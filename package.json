@@ -16,11 +16,15 @@
     "@capacitor/android": "^7.4.0",
     "@capacitor/clipboard": "^7.0.0",
     "@capacitor/core": "^7.4.0",
+    "@huggingface/transformers": "3.8.1",
     "lucide-react": "^0.468.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.6.0",
     "tesseract.js": "6.0.1"
+  },
+  "overrides": {
+    "sharp": "0.35.4"
   },
   "devDependencies": {
     "@capacitor/cli": "^7.4.0",
