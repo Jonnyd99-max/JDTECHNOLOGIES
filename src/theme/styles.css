@@ -1982,6 +1982,7 @@ form textarea,
 .board-crop summary { cursor: pointer; padding: 12px 0; font-weight: 600; }
 .board-crop label { margin: 12px 0; text-transform: capitalize; }
 .board-reading { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; padding: 12px; border: 1px solid var(--border); border-radius: 8px; }
+.board-region { padding: 12px 0; border-bottom: 1px solid var(--border); }
 .handwriting-select { position: relative; max-width: 650px; touch-action: none; cursor: crosshair; border: 1px solid var(--border); margin: 16px 0; line-height: 0; }
 .handwriting-select img { display: block; width: 100%; user-select: none; }
 .handwriting-box { position: absolute; border: 2px solid var(--orange); background: #ff7a2d20; pointer-events: none; }

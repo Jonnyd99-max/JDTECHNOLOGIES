@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cropHandwritingLine, selectionBetween, startHandwriting } from "./handwriting";
+import { cropHandwritingLine, selectionBetween, startHandwriting, startHandwritingBatch } from "./handwriting";
 class FakeWorker {
   static last: FakeWorker;
   onmessage: ((event: { data: unknown }) => void) | null = null;
@@ -18,6 +18,13 @@ describe("local handwriting worker", () => {
     FakeWorker.last.onmessage?.({ data: { type: "progress", message: "Reading" } });
     FakeWorker.last.onmessage?.({ data: { type: "result", text: "Meeting notes" } });
     expect(await job.promise).toBe("Meeting notes"); expect(progress).toHaveBeenCalledWith("Reading"); expect(FakeWorker.last.terminate).toHaveBeenCalledOnce();
+  });
+  it("reads an ordered batch in one worker so model loading is shared", async () => {
+    vi.stubGlobal("Worker", FakeWorker);
+    const job = startHandwritingBatch(["first crop", "second crop"], vi.fn());
+    expect(FakeWorker.last.postMessage).toHaveBeenCalledWith({ images: ["first crop", "second crop"] });
+    FakeWorker.last.onmessage?.({ data: { type: "result", texts: ["First line", "Second line"] } });
+    expect(await job.promise).toEqual(["First line", "Second line"]); expect(FakeWorker.last.terminate).toHaveBeenCalledOnce();
   });
   it("cancels model loading and ignores late results", async () => {
     vi.stubGlobal("Worker", FakeWorker); const job = startHandwriting("crop", vi.fn());

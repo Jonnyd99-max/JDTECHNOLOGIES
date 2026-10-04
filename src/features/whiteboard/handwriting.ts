@@ -1,22 +1,28 @@
-export function startHandwriting(image: string, progress: (message: string) => void) {
+function handwritingJob<T>(input: { image: string } | { images: string[] }, progress: (message: string) => void, read: (message: { text: string; texts: string[] }) => T) {
   const worker = new Worker(new URL("./handwriting.worker.ts", import.meta.url), { type: "module" });
   let settled = false;
   let rejectJob: (error: Error) => void = () => {};
   let timeout: ReturnType<typeof setTimeout>;
   const stop = () => { clearTimeout(timeout); worker.terminate(); };
-  const promise = new Promise<string>((resolve, reject) => {
+  const promise = new Promise<T>((resolve, reject) => {
     rejectJob = reject;
     worker.onmessage = event => {
       if (settled) return;
       if (event.data.type === "progress") progress(event.data.message);
-      else if (event.data.type === "result") { settled = true; stop(); resolve(event.data.text); }
+      else if (event.data.type === "result") { settled = true; stop(); resolve(read(event.data)); }
       else { settled = true; stop(); reject(new Error("Handwriting reader failed")); }
     };
     worker.onerror = () => { if (!settled) { settled = true; stop(); reject(new Error("Handwriting reader unavailable")); } };
     timeout = setTimeout(() => { if (!settled) { settled = true; stop(); reject(new Error("Handwriting reader timed out")); } }, 300000);
-    worker.postMessage({ image });
+    worker.postMessage(input);
   });
   return { promise, cancel: () => { if (!settled) { settled = true; stop(); rejectJob(new DOMException("Cancelled", "AbortError")); } } };
+}
+export function startHandwriting(image: string, progress: (message: string) => void) {
+  return handwritingJob({ image }, progress, message => message.text);
+}
+export function startHandwritingBatch(images: string[], progress: (message: string) => void) {
+  return handwritingJob({ images }, progress, message => message.texts);
 }
 export interface LineSelection { x: number; y: number; width: number; height: number }
 export function selectionBetween(a: { x: number; y: number }, b: { x: number; y: number }): LineSelection {
