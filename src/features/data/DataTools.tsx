@@ -2,6 +2,7 @@ import { useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { Gauge, Percent, Factory, ArrowRight } from "lucide-react";
 import { Modal, PageHeading } from "../../components/UI";
+import { Orb } from "../../components/Orb";
 import {
   LocalToolStorage,
   validateTool,
@@ -27,7 +28,10 @@ const format = (value: number | null, digits = 1) =>
 function Frame({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div className="data-tools">
-      <PageHeading eyebrow="DATA TOOLS" title={title} back="/data" />
+      <div className="data-heading">
+        <PageHeading eyebrow="DATA TOOLS" title={title} back="/data" />
+        <Orb small />
+      </div>
       {children}
     </div>
   );
@@ -147,12 +151,15 @@ export function DataToolsHome() {
   ];
   return (
     <div className="data-tools">
-      <PageHeading
-        eyebrow="YOUR WORKSPACE"
-        title="Data Tools"
-        description="Clear figures. Better decisions."
-        back="/"
-      />
+      <div className="data-heading">
+        <PageHeading
+          eyebrow="YOUR WORKSPACE"
+          title="Data Tools"
+          description="Clear figures. Better decisions."
+          back="/"
+        />
+        <Orb small />
+      </div>
       <div className="data-cards">
         {cards.map(({ path, title, description, Icon }) => (
           <Link className="data-card" to={`/data/${path}`} key={path}>
@@ -177,7 +184,8 @@ function Dial({
   finish: number | null;
   target: number;
 }) {
-  const angle = Math.PI * (1 - 100 / 150),
+  const maximum = Math.max(100, percent ?? 100);
+  const angle = Math.PI * (1 - 100 / maximum),
     markerX = 150 + 118 * Math.cos(angle),
     markerY = 140 - 118 * Math.sin(angle);
   return (
@@ -185,18 +193,18 @@ function Dial({
       <svg
         viewBox="0 0 300 165"
         role="img"
-        aria-label={`Forecast ${format(percent)} percent; target 100 percent; scale zero to 150 percent`}
+        aria-label={`Forecast ${format(percent)} percent; target 100 percent; scale zero to ${format(maximum)} percent`}
       >
         <path
           className="dial-track"
           d="M 25 140 A 125 125 0 0 1 275 140"
-          pathLength="150"
+          pathLength={maximum}
         />
         <path
           className="dial-value"
           d="M 25 140 A 125 125 0 0 1 275 140"
-          pathLength="150"
-          strokeDasharray={`${Math.max(0, Math.min(150, percent ?? 0))} 150`}
+          pathLength={maximum}
+          strokeDasharray={`${Math.max(0, percent ?? 0)} ${maximum}`}
         />
         <line
           x1={markerX}
@@ -206,14 +214,14 @@ function Dial({
           stroke="currentColor"
           strokeWidth="2"
         />
-        <text x="226" y="14" textAnchor="middle">
+        <text x="275" y="14" textAnchor="end">
           100% TARGET
         </text>
         <text x="25" y="162">
           0%
         </text>
         <text x="275" y="162" textAnchor="end">
-          150%
+          {format(maximum)}%
         </text>
       </svg>
       <div className="dial-number">
