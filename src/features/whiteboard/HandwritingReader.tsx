@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { copyText } from "../../services/clipboard";
+import { DetectedHandwriting } from "./DetectedHandwriting";
 import { cropHandwritingLine, selectionBetween, startHandwriting, type LineSelection } from "./handwriting";
 
 export function HandwritingReader({ image }: { image: string }) {
@@ -60,7 +61,7 @@ export function HandwritingReader({ image }: { image: string }) {
     document.body.appendChild(link); link.click(); link.remove();
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
-  return <section className="board-controls" aria-labelledby="handwriting-heading">
+  return <><DetectedHandwriting image={image} /><section className="board-controls" aria-labelledby="handwriting-heading">
     <h2 id="handwriting-heading">Handwriting reader <span className="muted">· experimental</span></h2>
     <p>Read one handwritten line at a time. This uses a dedicated handwriting model and can return incorrect words, particularly for dates, numbers and signatures.</p>
     <p className="muted">Free and on-device. First use downloads about 70 MB of model files, plus the reader runtime, from Hugging Face and jsDelivr. Wi-Fi is recommended. Downloads may be cached; your photo stays on this device.</p>
@@ -82,5 +83,5 @@ export function HandwritingReader({ image }: { image: string }) {
     </>}
     <p role="status" aria-live="polite">{message}</p>
     {hasResult && <><label htmlFor="handwriting-result">Suggested handwriting (editable)</label><textarea className="board-text" id="handwriting-result" rows={3} value={text} onChange={event => setText(event.target.value)} /><div className="inline-buttons"><button className="button secondary" disabled={!text.trim()} onClick={() => void copy()}>Copy handwriting</button><button className="button secondary" disabled={!text.trim()} onClick={download}>Download handwriting</button></div></>}
-  </section>;
+  </section></>;
 }

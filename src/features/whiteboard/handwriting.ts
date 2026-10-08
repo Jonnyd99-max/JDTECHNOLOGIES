@@ -29,7 +29,7 @@ export interface LineSelection { x: number; y: number; width: number; height: nu
 export function selectionBetween(a: { x: number; y: number }, b: { x: number; y: number }): LineSelection {
   return { x: Math.min(a.x, b.x), y: Math.min(a.y, b.y), width: Math.abs(a.x - b.x), height: Math.abs(a.y - b.y) };
 }
-export async function cropHandwritingLine(image: string, selection: LineSelection, enhanceContrast = false) {
+export async function cropHandwritingLine(image: string, selection: LineSelection, enhanceContrast = false, angle = 0) {
   const photo = new Image(); photo.src = image; await photo.decode();
   const x = Math.round(selection.x * photo.width), y = Math.round(selection.y * photo.height);
   const width = Math.min(photo.width - x, Math.round(selection.width * photo.width));
@@ -45,6 +45,16 @@ export async function cropHandwritingLine(image: string, selection: LineSelectio
     const pixels = ctx.getImageData(8, 8, width, height);
     normalizeDocumentPixels(pixels.data);
     ctx.putImageData(pixels, 8, 8);
+  }
+  if (angle && Number.isFinite(angle) && Math.abs(angle) <= .2) {
+    const rotated = document.createElement("canvas");
+    rotated.width = Math.ceil(canvas.width * Math.cos(angle) + canvas.height * Math.abs(Math.sin(angle)));
+    rotated.height = Math.ceil(canvas.height * Math.cos(angle) + canvas.width * Math.abs(Math.sin(angle)));
+    const output = rotated.getContext("2d"); if (!output) throw new Error("Photo processing unavailable");
+    output.fillStyle = "white"; output.fillRect(0, 0, rotated.width, rotated.height);
+    output.translate(rotated.width / 2, rotated.height / 2); output.rotate(-angle);
+    output.drawImage(canvas, -canvas.width / 2, -canvas.height / 2);
+    return rotated.toDataURL("image/png");
   }
   return canvas.toDataURL("image/png");
 }

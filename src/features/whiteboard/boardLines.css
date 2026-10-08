@@ -1,0 +1,19 @@
+.detected-line {
+  padding: 16px;
+  margin: 16px 0;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--card);
+}
+.detected-line img {
+  display: block;
+  max-width: 100%;
+  max-height: 160px;
+  margin: 12px 0;
+  object-fit: contain;
+  background: white;
+}
+.detected-line label {
+  display: block;
+}
+.detected-line > label:first-child { display: flex; align-items: center; gap: 10px; min-height: 44px; }
