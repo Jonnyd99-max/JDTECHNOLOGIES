@@ -112,3 +112,16 @@ export function capacity(perTool: number, count: number, remaining: number) {
     ? { total, available }
     : null;
 }
+export function requiredTools(target: number, perTool: number) {
+  if (
+    !Number.isFinite(target) ||
+    target < 0 ||
+    !Number.isFinite(perTool) ||
+    perTool <= 0
+  )
+    return null;
+  const count = Math.ceil(target / perTool);
+  const total = count * perTool;
+  if (!Number.isSafeInteger(count) || !Number.isFinite(total)) return null;
+  return { count, total, spare: total - target };
+}

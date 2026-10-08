@@ -9,10 +9,10 @@
   min-height: 130px;
 }
 .data-heading > .orb-wrap {
-  overflow: hidden;
+  overflow: visible;
   --size: 76px;
   position: absolute;
-  right: -8px;
+  right: 8px;
   top: 30px;
   width: 106px;
   height: 106px;

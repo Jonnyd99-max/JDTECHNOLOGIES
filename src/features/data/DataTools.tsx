@@ -16,6 +16,7 @@ import {
   numberValue,
   percentage,
   periodAt,
+  requiredTools,
   status,
   type PercentageMode,
 } from "./calculations";
@@ -146,6 +147,12 @@ export function DataToolsHome() {
       path: "capacity",
       title: "Capacity Calculator",
       description: "Understand available capacity",
+      Icon: Factory,
+    },
+    {
+      path: "required-tools",
+      title: "Required Tools",
+      description: "Tools needed to achieve your 24-hour target",
       Icon: Factory,
     },
   ];
@@ -443,6 +450,95 @@ export function PercentageCalculator() {
             </p>
           )}
         </div>
+      </section>
+    </Frame>
+  );
+}
+export function RequiredToolsCalculator() {
+  const [initial] = useState(() => {
+    try {
+      return { tools: new LocalToolStorage().load(), error: "" };
+    } catch {
+      return {
+        tools: [] as CapacityTool[],
+        error:
+          "Stored tools could not be loaded. Data has been preserved; reload to retry.",
+      };
+    }
+  });
+  const [selected, setSelected] = useState("");
+  const [target, setTarget] = useState("");
+  const tool = initial.tools.find((item) => item.id === selected);
+  const amount = numberValue(target);
+  const result =
+    tool && amount !== null ? requiredTools(amount, tool.capacity24) : null;
+  return (
+    <Frame title="Required Tools">
+      {initial.error && (
+        <div className="banner error-banner" role="alert">
+          {initial.error}
+        </div>
+      )}
+      <section className="data-panel">
+        <Link className="text-button" to="/data/capacity">
+          Add or edit tool capacities <ArrowRight size={16} />
+        </Link>
+        <label className="data-field">
+          <span>Select tool</span>
+          <select
+            value={selected}
+            onChange={(event) => setSelected(event.target.value)}
+          >
+            <option value="">Select a tool</option>
+            {initial.tools.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        {!initial.tools.length && !initial.error && (
+          <p className="muted">
+            Add a tool in the Capacity Calculator’s Manage Tools section to get
+            started.
+          </p>
+        )}
+        <Kpi
+          label="24-hour capacity per tool"
+          value={format(tool?.capacity24 ?? null)}
+        />
+        <Numeric label="24-hour target" value={target} onChange={setTarget} />
+        <p className="muted">
+          A full 24-hour run at the selected tool’s saved capacity.
+        </p>
+      </section>
+      <section className="data-panel" aria-live="polite">
+        <div className="data-result">
+          <p className="eyebrow">TOOLS REQUIRED</p>
+          <strong>{format(result?.count ?? null, 0)}</strong>
+        </div>
+        <p>
+          {result
+            ? result.count === 0
+              ? "No tools are required for a zero target."
+              : `Run ${format(result.count, 0)} ${result.count === 1 ? "tool" : "tools"} for 24 hours to meet your target.`
+            : "Select a tool and enter your target."}
+        </p>
+        <div className="data-kpis">
+          <Kpi label="Target" value={format(amount)} />
+          <Kpi
+            label="Total 24hr capacity"
+            value={format(result?.total ?? null)}
+          />
+          <Kpi
+            label="Capacity above target"
+            value={format(result?.spare ?? null)}
+          />
+        </div>
+        <p className="muted">
+          Rounded up to whole tools. This is theoretical capacity; downtime and
+          rejects are not included.
+        </p>
       </section>
     </Frame>
   );

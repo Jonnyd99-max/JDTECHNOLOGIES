@@ -7,6 +7,7 @@ import {
   percentage,
   periodAt,
   status,
+  requiredTools,
 } from "./calculations";
 describe("operational time and forecasts", () => {
   it("keeps early morning in the previous 07:00 production period", () => {
@@ -43,6 +44,23 @@ describe("operational time and forecasts", () => {
   });
 });
 describe("percentage and capacity calculations", () => {
+  it("rounds required tools up for a full 24-hour target", () => {
+    expect(requiredTools(2000, 500)).toEqual({
+      count: 4,
+      total: 2000,
+      spare: 0,
+    });
+    expect(requiredTools(2001, 500)).toEqual({
+      count: 5,
+      total: 2500,
+      spare: 499,
+    });
+    expect(requiredTools(100, 500)?.count).toBe(1);
+    expect(requiredTools(0, 500)?.count).toBe(0);
+    expect(requiredTools(-1, 500)).toBeNull();
+    expect(requiredTools(100, 0)).toBeNull();
+    expect(requiredTools(Number.MAX_VALUE, 1)).toBeNull();
+  });
   it("calculates all four percentage modes", () => {
     expect(percentage("attainment", 2120, 2000)).toBe(106);
     expect(percentage("change", 100, 90)).toBe(-10);

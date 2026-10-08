@@ -29,6 +29,7 @@ import {
   PaceCalculator,
   PercentageCalculator,
   CapacityCalculator,
+  RequiredToolsCalculator,
 } from "./features/data/DataTools";
 import { StoreProvider, useStore } from "./storage/AppStore";
 function Shell() {
@@ -144,6 +145,10 @@ function Shell() {
           <Route path="/data/pace" element={<PaceCalculator />} />
           <Route path="/data/percentage" element={<PercentageCalculator />} />
           <Route path="/data/capacity" element={<CapacityCalculator />} />
+          <Route
+            path="/data/required-tools"
+            element={<RequiredToolsCalculator />}
+          />
           <Route path="/lumo" element={<LumoHome />} />
           <Route path="/lumo/meeting" element={<MeetingScreen />} />
           <Route path="/lumo/history" element={<HistoryScreen />} />
