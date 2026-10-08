@@ -1,3 +1,4 @@
+import { normalizeDocumentPixels } from "./documentImage";
 function handwritingJob<T>(input: { image: string } | { images: string[] }, progress: (message: string) => void, read: (message: { text: string; texts: string[] }) => T) {
   const worker = new Worker(new URL("./handwriting.worker.ts", import.meta.url), { type: "module" });
   let settled = false;
@@ -28,7 +29,7 @@ export interface LineSelection { x: number; y: number; width: number; height: nu
 export function selectionBetween(a: { x: number; y: number }, b: { x: number; y: number }): LineSelection {
   return { x: Math.min(a.x, b.x), y: Math.min(a.y, b.y), width: Math.abs(a.x - b.x), height: Math.abs(a.y - b.y) };
 }
-export async function cropHandwritingLine(image: string, selection: LineSelection) {
+export async function cropHandwritingLine(image: string, selection: LineSelection, enhanceContrast = false) {
   const photo = new Image(); photo.src = image; await photo.decode();
   const x = Math.round(selection.x * photo.width), y = Math.round(selection.y * photo.height);
   const width = Math.min(photo.width - x, Math.round(selection.width * photo.width));
@@ -38,5 +39,12 @@ export async function cropHandwritingLine(image: string, selection: LineSelectio
   const ctx = canvas.getContext("2d"); if (!ctx) throw new Error("Photo processing unavailable");
   ctx.fillStyle = "white"; ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(photo, x, y, width, height, 8, 8, width, height);
+  if (enhanceContrast) {
+    // Normalize only the selected ink, before adding the white margin to its
+    // histogram. Wide, faint board strokes need their own contrast range.
+    const pixels = ctx.getImageData(8, 8, width, height);
+    normalizeDocumentPixels(pixels.data);
+    ctx.putImageData(pixels, 8, 8);
+  }
   return canvas.toDataURL("image/png");
 }

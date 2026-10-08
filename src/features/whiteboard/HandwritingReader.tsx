@@ -4,6 +4,7 @@ import { cropHandwritingLine, selectionBetween, startHandwriting, type LineSelec
 
 export function HandwritingReader({ image }: { image: string }) {
   const [open, setOpen] = useState(false);
+  const [enhanceContrast, setEnhanceContrast] = useState(true);
   const [selection, setSelection] = useState<LineSelection>({ x: .1, y: .1, width: .8, height: .1 });
   const [selected, setSelected] = useState(false);
   const [draft, setDraft] = useState<LineSelection | null>(null);
@@ -21,9 +22,9 @@ export function HandwritingReader({ image }: { image: string }) {
   useEffect(() => {
     if (!selected) return;
     let live = true; setPreview("");
-    void cropHandwritingLine(image, selection).then(value => { if (live) setPreview(value); }).catch(error => { if (live) setMessage(error.message); });
+    void cropHandwritingLine(image, selection, enhanceContrast).then(value => { if (live) setPreview(value); }).catch(error => { if (live) setMessage(error.message); });
     return () => { live = false; };
-  }, [image, selection, selected]);
+  }, [image, selection, selected, enhanceContrast]);
   function point(event: PointerEvent<HTMLDivElement>) {
     const bounds = event.currentTarget.getBoundingClientRect();
     return { x: Math.max(0, Math.min(1, (event.clientX - bounds.left) / bounds.width)), y: Math.max(0, Math.min(1, (event.clientY - bounds.top) / bounds.height)) };
@@ -65,6 +66,7 @@ export function HandwritingReader({ image }: { image: string }) {
     <p className="muted">Free and on-device. First use downloads about 70 MB of model files, plus the reader runtime, from Hugging Face and jsDelivr. Wi-Fi is recommended. Downloads may be cached; your photo stays on this device.</p>
     {!open ? <button className="button secondary" onClick={() => setOpen(true)}>Select a handwritten line</button> : <>
       <p>Drag a box around one line, or tap its top-left and bottom-right corners. Exclude printed labels and table borders.</p>
+      <label className="board-toggle"><input type="checkbox" checked={enhanceContrast} disabled={running} onChange={event => { setEnhanceContrast(event.target.checked); setText(""); setHasResult(false); setMessage(""); }} /> Improve faint handwriting contrast</label>
       <div className="handwriting-select" onPointerDown={down} onPointerUp={up} onPointerCancel={() => { drag.current = null; firstTap.current = null; setDraft(null); }} onPointerMove={event => { if (drag.current && !running) setDraft(selectionBetween(drag.current, point(event))); }}>
         <img src={image} alt="Original photo for handwriting selection" draggable={false} />
         {(selected || draft) && <span className="handwriting-box" style={{ left: `${(draft || selection).x * 100}%`, top: `${(draft || selection).y * 100}%`, width: `${(draft || selection).width * 100}%`, height: `${(draft || selection).height * 100}%` }} />}
