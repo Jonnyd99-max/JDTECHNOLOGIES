@@ -32,8 +32,8 @@ export const apps = [
     description: "Clarity from complexity",
     icon: Database,
     route: "/data",
-    status: "coming-soon",
-    theme: "blue",
+    status: "active",
+    theme: "orange",
   },
   {
     id: "handover",

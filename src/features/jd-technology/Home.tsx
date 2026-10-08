@@ -27,10 +27,40 @@ export function Home() {
       <div className="apps-grid">
         {apps.map((app) =>
           app.id === "whiteboard" ? (
-            <Link key={app.id} className="app-card future-card theme-blue" to={app.route}>
-              <div className="card-top"><div className="tool-icon"><app.icon size={24} /></div><span className="pill active">READY TO WORK</span></div>
-              <h3>{app.name}</h3><p className="muted">{app.description}</p>
-              <div className="future-bottom">Clean up a photo <ArrowRight size={17} /></div>
+            <Link
+              key={app.id}
+              className="app-card future-card theme-blue"
+              to={app.route}
+            >
+              <div className="card-top">
+                <div className="tool-icon">
+                  <app.icon size={24} />
+                </div>
+                <span className="pill active">READY TO WORK</span>
+              </div>
+              <h3>{app.name}</h3>
+              <p className="muted">{app.description}</p>
+              <div className="future-bottom">
+                Clean up a photo <ArrowRight size={17} />
+              </div>
+            </Link>
+          ) : app.id === "data" ? (
+            <Link
+              key={app.id}
+              className="app-card future-card theme-orange"
+              to={app.route}
+            >
+              <div className="card-top">
+                <div className="tool-icon">
+                  <app.icon size={24} />
+                </div>
+                <span className="pill active">READY TO WORK</span>
+              </div>
+              <h3>{app.name}</h3>
+              <p className="muted">{app.description}</p>
+              <div className="future-bottom">
+                Open Data Tools <ArrowRight size={17} />
+              </div>
             </Link>
           ) : app.status === "active" ? (
             <Link key={app.id} className="app-card lumo-card" to={app.route}>

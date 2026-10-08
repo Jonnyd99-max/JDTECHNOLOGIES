@@ -24,6 +24,12 @@ import { HistoryScreen } from "./features/lumo/History";
 import { SummaryScreen } from "./features/lumo/Summary";
 import { SettingsScreen } from "./features/lumo/Settings";
 import { WhiteboardScreen } from "./features/whiteboard/Whiteboard";
+import {
+  DataToolsHome,
+  PaceCalculator,
+  PercentageCalculator,
+  CapacityCalculator,
+} from "./features/data/DataTools";
 import { StoreProvider, useStore } from "./storage/AppStore";
 function Shell() {
   const { settings, error, clearError } = useStore();
@@ -55,7 +61,7 @@ function Shell() {
   }, []);
   useEffect(() => {
     window.scrollTo(0, 0);
-    document.title = `${location.pathname.startsWith("/whiteboard") ? "White Board Clean Up" : location.pathname.startsWith("/lumo") ? "Lumo" : "Workspace"} · JD Technology`;
+    document.title = `${location.pathname.startsWith("/data") ? "Data Tools" : location.pathname.startsWith("/whiteboard") ? "White Board Clean Up" : location.pathname.startsWith("/lumo") ? "Lumo" : "Workspace"} · JD Technology`;
   }, [location.pathname]);
   return (
     <div className="app-shell">
@@ -134,6 +140,10 @@ function Shell() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/whiteboard" element={<WhiteboardScreen />} />
+          <Route path="/data" element={<DataToolsHome />} />
+          <Route path="/data/pace" element={<PaceCalculator />} />
+          <Route path="/data/percentage" element={<PercentageCalculator />} />
+          <Route path="/data/capacity" element={<CapacityCalculator />} />
           <Route path="/lumo" element={<LumoHome />} />
           <Route path="/lumo/meeting" element={<MeetingScreen />} />
           <Route path="/lumo/history" element={<HistoryScreen />} />

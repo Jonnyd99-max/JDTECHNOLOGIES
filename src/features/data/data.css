@@ -1,0 +1,194 @@
+.data-tools {
+  max-width: 720px;
+  margin: 0 auto;
+}
+.data-panel,
+.data-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  padding: 24px;
+}
+.data-panel {
+  margin-bottom: 18px;
+  display: grid;
+  gap: 20px;
+}
+.data-cards {
+  display: grid;
+  gap: 16px;
+}
+.data-card {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  min-height: 112px;
+}
+.data-card div {
+  flex: 1;
+}
+.data-card h2,
+.data-tool-row h2 {
+  font-size: 19px;
+  overflow-wrap: anywhere;
+}
+.data-card p {
+  margin-top: 6px;
+}
+.data-inputs,
+.data-kpis {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+.data-field {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.data-field > span {
+  font-weight: 600;
+  font-size: 14px;
+}
+.data-field input,
+.data-field select {
+  width: 100%;
+  min-width: 0;
+  min-height: 52px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--input);
+  color: var(--text);
+  padding: 12px;
+  font-size: 18px;
+}
+.data-field small[role="alert"],
+.data-tool-form [role="alert"] {
+  color: #c34b29;
+}
+.data-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.data-options button {
+  flex: 1;
+  min-height: 46px;
+  padding: 10px 8px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--input);
+  font-size: 13px;
+}
+.data-options button[aria-pressed="true"] {
+  background: #ff7a2d18;
+  border-color: var(--orange);
+}
+.data-kpis > div {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+.data-kpis span {
+  font-size: 12px;
+}
+.data-kpis strong {
+  font-size: 22px;
+  overflow-wrap: anywhere;
+}
+.data-result {
+  text-align: center;
+}
+.data-result > strong {
+  display: block;
+  font-size: clamp(32px, 8vw, 48px);
+  overflow-wrap: anywhere;
+}
+.data-status {
+  text-align: center;
+  font-weight: 600;
+}
+.forecast-dial {
+  position: relative;
+  max-width: 380px;
+  width: 100%;
+  margin: 0 auto;
+}
+.forecast-dial svg {
+  width: 100%;
+  overflow: visible;
+}
+.forecast-dial path {
+  fill: none;
+  stroke-width: 14px;
+}
+.dial-track {
+  stroke: var(--border);
+}
+.dial-value {
+  stroke: var(--orange);
+}
+.forecast-dial text {
+  fill: var(--muted);
+  font-size: 9px;
+}
+.dial-number {
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  top: 38%;
+  text-align: center;
+  display: grid;
+}
+.dial-number strong {
+  font-size: clamp(28px, 8vw, 46px);
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+.dial-number > span:last-child {
+  font-size: 14px;
+  margin-top: 6px;
+}
+.completion {
+  padding: 18px;
+  background: var(--input);
+  border-radius: 14px;
+  text-align: center;
+}
+.completion strong {
+  font-size: 34px;
+}
+.capacity-progress {
+  display: grid;
+  gap: 10px;
+  font-size: 13px;
+}
+.capacity-progress progress {
+  width: 100%;
+  height: 12px;
+  accent-color: var(--orange);
+}
+.data-tool-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 16px;
+}
+.data-tool-form {
+  display: grid;
+  gap: 20px;
+}
+@media (max-width: 480px) {
+  .data-panel,
+  .data-card {
+    padding: 18px;
+  }
+  .data-options button {
+    font-size: 12px;
+  }
+  .data-kpis {
+    gap: 16px;
+  }
+}
