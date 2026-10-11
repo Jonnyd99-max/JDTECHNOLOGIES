@@ -2,10 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Camera, Upload, RotateCw, Download } from "lucide-react";
 import { cleanPixels } from "./cleanup";
-import { TextExtraction } from "./TextExtraction";
-import { HandwritingReader } from "./HandwritingReader";
-import { MixedTextExtraction } from "./MixedTextExtraction";
-import { OnlineHandwriting } from "./OnlineHandwriting";
+import { PhotoTextReader } from "./PhotoTextReader";
 
 export function WhiteboardScreen() {
   const [source, setSource] = useState<HTMLImageElement | null>(null);
@@ -82,7 +79,7 @@ export function WhiteboardScreen() {
       {error && <p role="alert" className="banner error-banner">{error}</p>}
       {source && <div className="board-settings">
         <label>Cleanup strength: {Math.round(strength * 100)}%<input type="range" min="0" max="1" step=".05" value={strength} onChange={e => setStrength(Number(e.target.value))} /></label>
-        <details className="board-crop"><summary>Crop to the writing</summary><p className="muted">For difficult handwriting, isolate a few words or one line. Edges refer to the original photo.</p>
+        <details className="board-crop"><summary>Crop to the writing</summary><p className="muted">Keep the notes you want to read and exclude brands, labels and empty space. Edges refer to the original photo.</p>
           {(["top", "bottom", "left", "right"] as const).map(edge => {
             const opposite = { top: "bottom", bottom: "top", left: "right", right: "left" } as const;
             return <label key={edge}>Crop {edge}: {crop[edge]}%<input type="range" min="0" max={90 - crop[opposite[edge]]} value={crop[edge]} onChange={e => setCrop({ ...crop, [edge]: Number(e.target.value) })} /></label>;
@@ -96,10 +93,7 @@ export function WhiteboardScreen() {
     {source ? <><div className="board-comparison"><figure><figcaption>Original</figcaption><img src={original} alt="Original uploaded whiteboard or paper" /></figure><figure><figcaption>Cleaned image</figcaption>{result && <img src={result} alt="Cleaned whiteboard or paper" />}</figure></div>
       {result && <a className="button primary" href={result} download="white-board-cleaned.png"><Download size={18} /> Download cleaned image</a>}
       <p className="muted">Check faint writing before saving. Reduce strength if details fade. Photos retain up to 3,000 pixels on the longest side, within a 6-megapixel limit.</p></> : <div className="board-empty"><Camera size={40} /><h2>Give your notes a clearer background.</h2><p>Photograph the board or paper straight on, with even lighting. Include all the writing you want to keep.</p></div>}
-    {result && !busy && <OnlineHandwriting image={ocrOriginal} />}
-    {result && !busy && <HandwritingReader key={`handwriting-${ocrOriginal}`} image={ocrOriginal} />}
-    {result && !busy && <MixedTextExtraction key={`mixed-${ocrOriginal}`} image={ocrOriginal} />}
-    {result && !busy && <TextExtraction key={result} image={result} original={ocrOriginal} />}
+    {ocrOriginal && !busy && <PhotoTextReader image={result || ocrOriginal} original={ocrOriginal} />}
     <p className="muted">Review extracted text against your photo. Diagram redrawing is not included.</p>
   </div>;
 }

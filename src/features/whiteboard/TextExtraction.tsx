@@ -9,7 +9,7 @@ export function TextExtraction({ image, original }: { image: string; original: s
   const [running, setRunning] = useState(false);
   const [message, setMessage] = useState("");
   const [complete, setComplete] = useState(false);
-  const [compare, setCompare] = useState(true);
+  const [compare, setCompare] = useState(false);
   const [candidates, setCandidates] = useState<ExtractionCandidate[]>([]);
   const job = useRef<ReturnType<typeof startExtraction> | null>(null);
   const mounted = useRef(true);
@@ -43,11 +43,11 @@ export function TextExtraction({ image, original }: { image: string; original: s
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
   return <section className="board-controls" aria-labelledby="extract-heading">
-    <h2 id="extract-heading">Extract text</h2>
-    <p>For school forms and tables, use Printed form / table. It reads a grayscale version of the original photo with more detail. For a handwritten field, crop to that field and try Single line; joined-up writing may still need manual correction.</p>
-    <p className="muted">Free processing on your device. Internet is needed to load the OCR engine and English language data. Your photo is not uploaded. Changing the image adjustments clears this text, so copy or download it first.</p>
+    <h2 id="extract-heading">Offline reader · printed text</h2>
+    <p>For printed pages and tables, use Printed form / table. Choose Scattered printed notes for separate labels, or Single printed line for a small crop. Use the online reader for handwriting.</p>
+    <p className="muted">Free processing on your device; your photo is not uploaded. Internet is needed to load the reader files on first use. Offline use depends on those files remaining cached on your device. Changing image adjustments clears this text, so copy or download it first.</p>
     <div className="inline-buttons">
-      <label className="board-layout">Text layout <select value={layout} disabled={running} onChange={e => setLayout(e.target.value as TextLayout)}><option value="form">Printed form / table</option><option value="notes">Whiteboard / scattered notes</option><option value="document">Paper / document</option><option value="block">Handwritten block</option><option value="line">Single line</option></select></label>
+      <label className="board-layout">Text layout <select value={layout} disabled={running} onChange={e => setLayout(e.target.value as TextLayout)}><option value="form">Printed form / table</option><option value="notes">Scattered printed notes</option><option value="line">Single printed line</option></select></label>
       <label><input type="checkbox" checked={compare} disabled={running} onChange={e => setCompare(e.target.checked)} /> Compare original and cleaned photo (slower)</label>
       <button className="button primary" disabled={running} onClick={() => void extract()}><ScanText size={18} />{complete ? "Extract again" : "Extract text"}</button>
       {running && <button className="button secondary" onClick={() => job.current?.cancel()}>Cancel</button>}
