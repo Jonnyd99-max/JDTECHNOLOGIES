@@ -45,6 +45,14 @@ The earlier version recovered the name on one photo but failed on a new photo re
 
 First use downloads an additional 11.2 MB classifier and the approximately 68 MB handwriting model plus runtime; photos stay local. Cancel/navigation terminate workers. The overall job has a ten-minute timeout and the handwriting stage five minutes. Pages above 500 detected words or 30 handwriting candidates ask for a smaller crop. Model provenance, license and optional conversion details are in `public/models/README.md`.
 
+## Executive Reporting
+
+Pace & Forecast, Capacity Calculator and Required Tools each offer **Send to Reporting** below their results. Percentage Calculator is excluded. Sending stores a versioned snapshot in `jd.reports.v1` on this device; each tool group has one latest snapshot, replaced only when explicitly sent again. Inputs, selected tool, time mode, scenario, saved capacity library (for Capacity) and send timestamp are preserved. Calculator or tool-library edits do not silently change reports. Invalid figures cannot be sent, and malformed/blocked storage displays an error without overwriting saved reports.
+
+Open **Reporting** from the workspace or calculator. The executive view includes JD Technology branding, a compact animated Lumo orb with label, group headings, timestamps, KPI cards, accessible SVG comparison charts and detailed tables. All-groups and individual-group filters select the visible report; groups remain independent because periods, units and targets may differ. Pace attainment keeps a 100% marker on an adaptive scale. Capacity and Required Tools explicitly label theoretical output and exclude downtime/rejects. No historical trends or combined production totals are inferred from single snapshots.
+
+**Copy executive summary** exports the visible groups. **Print / Save as PDF** opens the browser's print flow using a dedicated print stylesheet with report branding and without app navigation; PDF availability depends on the device/browser. No reporting API, account, cloud sync or cost is added. Clearing app data removes reports. Do not rely on device-local snapshots as the only copy of important figures.
+
 ## Run locally
 
 Install **Node.js 22 LTS** (including npm). In this folder:

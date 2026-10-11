@@ -44,10 +44,10 @@ export function Home() {
                 Clean up a photo <ArrowRight size={17} />
               </div>
             </Link>
-          ) : app.id === "data" ? (
+          ) : app.id === "data" || app.id === "reporting" ? (
             <Link
               key={app.id}
-              className="app-card future-card theme-orange"
+              className={`app-card future-card theme-${app.theme}`}
               to={app.route}
             >
               <div className="card-top">
@@ -59,7 +59,7 @@ export function Home() {
               <h3>{app.name}</h3>
               <p className="muted">{app.description}</p>
               <div className="future-bottom">
-                Open Data Tools <ArrowRight size={17} />
+                Open {app.name} <ArrowRight size={17} />
               </div>
             </Link>
           ) : app.status === "active" ? (

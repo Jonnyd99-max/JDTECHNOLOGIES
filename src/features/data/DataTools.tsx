@@ -21,6 +21,7 @@ import {
   type PercentageMode,
 } from "./calculations";
 import "./data.css";
+import { SendToReporting } from "../reporting/SendToReporting";
 
 const format = (value: number | null, digits = 1) =>
   value !== null && Number.isFinite(value)
@@ -381,6 +382,9 @@ export function PaceCalculator() {
           </p>
         )}
       </section>
+      <SendToReporting input={result && result.finish !== null && t !== null && a !== null && e !== null && r !== null
+        ? { group: "pace", target: t, actual: a, elapsed: e, remaining: r, multiplier: Number(scenario), asOf: time, mode: mode === "work" ? "work" : "manual" }
+        : null} />
     </Frame>
   );
 }
@@ -540,6 +544,7 @@ export function RequiredToolsCalculator() {
           rejects are not included.
         </p>
       </section>
+      <SendToReporting input={result && tool && amount !== null ? { group: "required", tool, target: amount } : null} />
     </Frame>
   );
 }
@@ -719,6 +724,7 @@ export function CapacityCalculator() {
               />
             </div>
           </section>
+          <SendToReporting input={result && tool && n !== null && period ? { group: "capacity", tool, count: n, remaining: period.remaining, asOf: time, mode: mode === "work" ? "work" : "standard", library: tools } : null} />
         </>
       )}
       {editing && (

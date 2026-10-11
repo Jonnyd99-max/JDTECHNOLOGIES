@@ -47,10 +47,10 @@ export const apps = [
   {
     id: "reporting",
     name: "Reporting",
-    description: "The bigger picture",
+    description: "Your executive view of Data Tools",
     icon: ChartNoAxesCombined,
     route: "/reporting",
-    status: "coming-soon",
+    status: "active",
     theme: "purple",
   },
   {

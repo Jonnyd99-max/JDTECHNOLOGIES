@@ -24,6 +24,7 @@ import { HistoryScreen } from "./features/lumo/History";
 import { SummaryScreen } from "./features/lumo/Summary";
 import { SettingsScreen } from "./features/lumo/Settings";
 import { WhiteboardScreen } from "./features/whiteboard/Whiteboard";
+import { ReportingScreen } from "./features/reporting/Reporting";
 import {
   DataToolsHome,
   PaceCalculator,
@@ -62,7 +63,7 @@ function Shell() {
   }, []);
   useEffect(() => {
     window.scrollTo(0, 0);
-    document.title = `${location.pathname.startsWith("/data") ? "Data Tools" : location.pathname.startsWith("/whiteboard") ? "White Board Clean Up" : location.pathname.startsWith("/lumo") ? "Lumo" : "Workspace"} · JD Technology`;
+    document.title = `${location.pathname.startsWith("/reporting") ? "Executive Reporting" : location.pathname.startsWith("/data") ? "Data Tools" : location.pathname.startsWith("/whiteboard") ? "White Board Clean Up" : location.pathname.startsWith("/lumo") ? "Lumo" : "Workspace"} · JD Technology`;
   }, [location.pathname]);
   return (
     <div className="app-shell">
@@ -141,6 +142,7 @@ function Shell() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/whiteboard" element={<WhiteboardScreen />} />
+          <Route path="/reporting" element={<ReportingScreen />} />
           <Route path="/data" element={<DataToolsHome />} />
           <Route path="/data/pace" element={<PaceCalculator />} />
           <Route path="/data/percentage" element={<PercentageCalculator />} />
