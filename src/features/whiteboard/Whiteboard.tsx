@@ -5,6 +5,7 @@ import { cleanPixels } from "./cleanup";
 import { TextExtraction } from "./TextExtraction";
 import { HandwritingReader } from "./HandwritingReader";
 import { MixedTextExtraction } from "./MixedTextExtraction";
+import { OnlineHandwriting } from "./OnlineHandwriting";
 
 export function WhiteboardScreen() {
   const [source, setSource] = useState<HTMLImageElement | null>(null);
@@ -70,7 +71,7 @@ export function WhiteboardScreen() {
     <Link className="text-button" to="/">← Workspace</Link>
     <div className="page-heading"><div><p className="eyebrow">PHOTO TO CLEARER NOTES</p><h1>White Board Clean Up</h1><p className="muted">Brighten the background and make your writing easier to read.</p></div></div>
     <div className="board-controls">
-      <p>Free, on-device processing. Your photos stay on this device. Download your result before leaving this screen.</p>
+      <p>Cleanup and offline readers run on your device. The optional online reader sends a photo only when you choose Read online. Download your result before leaving this screen.</p>
       <div className="inline-buttons">
         <button className="button primary" disabled={busy} onClick={() => camera.current?.click()}><Camera size={18} /> Take a photo</button>
         <button className="button secondary" disabled={busy} onClick={() => upload.current?.click()}><Upload size={18} /> Upload photo</button>
@@ -95,6 +96,7 @@ export function WhiteboardScreen() {
     {source ? <><div className="board-comparison"><figure><figcaption>Original</figcaption><img src={original} alt="Original uploaded whiteboard or paper" /></figure><figure><figcaption>Cleaned image</figcaption>{result && <img src={result} alt="Cleaned whiteboard or paper" />}</figure></div>
       {result && <a className="button primary" href={result} download="white-board-cleaned.png"><Download size={18} /> Download cleaned image</a>}
       <p className="muted">Check faint writing before saving. Reduce strength if details fade. Photos retain up to 3,000 pixels on the longest side, within a 6-megapixel limit.</p></> : <div className="board-empty"><Camera size={40} /><h2>Give your notes a clearer background.</h2><p>Photograph the board or paper straight on, with even lighting. Include all the writing you want to keep.</p></div>}
+    {result && !busy && <OnlineHandwriting image={ocrOriginal} />}
     {result && !busy && <HandwritingReader key={`handwriting-${ocrOriginal}`} image={ocrOriginal} />}
     {result && !busy && <MixedTextExtraction key={`mixed-${ocrOriginal}`} image={ocrOriginal} />}
     {result && !busy && <TextExtraction key={result} image={result} original={ocrOriginal} />}
