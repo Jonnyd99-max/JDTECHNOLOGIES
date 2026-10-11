@@ -5,6 +5,7 @@ import { copyText } from "../../services/clipboard";
 import { capacity, forecast, requiredTools, status } from "../data/calculations";
 import { executiveSummary, loadReports, reportGroups, reportNumber as fmt, type ReportCollection, type ReportGroup, type ReportSnapshot } from "./reportStorage";
 import "./reporting.css";
+import { paceSummary } from "./paceSummary";
 
 function Metrics({ items }: { items: [string, string][] }) {
   return <dl className="report-metrics">{items.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>;
@@ -54,7 +55,7 @@ function Snapshot({ data }: { data: ReportSnapshot }) {
   return <article className="report-section" aria-labelledby={`report-${data.group}`}>
     <div className="report-section-heading"><div><p className="eyebrow">DATA TOOLS · {data.group === "pace" ? "PRODUCTION PACE" : data.tool.name}</p><h2 id={`report-${data.group}`}>{reportGroups[data.group]}</h2></div><p className="report-sent">Sent <time dateTime={data.sentAt}>{new Date(data.sentAt).toLocaleString()}</time></p></div>
     <Metrics items={metrics} />
-    <div className="report-detail-grid">{chart}<Table rows={table} /></div>
+    <div className="report-detail-grid"><div>{chart}{data.group === "pace" && <section className="report-pace-summary" aria-label="Target summary"><h3>Target summary</h3><dl>{paceSummary(data).items.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl><p>{paceSummary(data).takeaway}</p><p className="muted">Estimate from the saved {data.asOf} snapshot and selected future pace.</p></section>}</div><Table rows={table} /></div>
     {data.group === "capacity" && data.library.length > 1 && <details className="report-library"><summary>Saved tool capacities included in this snapshot ({data.library.length})</summary><div className="report-table-wrap"><table className="report-table"><caption>Capacity per individual tool · not combined production</caption><thead><tr><th scope="col">Tool</th><th scope="col">Output / 24 hours</th></tr></thead><tbody>{data.library.map(tool => <tr key={tool.id}><th scope="row">{tool.name}</th><td>{fmt(tool.capacity24)}</td></tr>)}</tbody></table></div></details>}
     <p className="muted report-note">{note}</p>
   </article>;

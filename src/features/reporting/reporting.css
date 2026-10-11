@@ -21,6 +21,12 @@
 .report-metrics dd { font-size: clamp(20px, 3vw, 28px); font-weight: 700; margin: 0; overflow-wrap: anywhere; }
 .report-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; align-items: start; }
 .report-chart { margin: 0; min-width: 0; }
+.report-pace-summary { margin-top: 18px; padding: 18px; border: 1px solid #f4772140; border-radius: 12px; background: #f477210a; }
+.report-pace-summary h3 { font-size: 16px; margin: 0 0 14px; }
+.report-pace-summary dl { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 0; }
+.report-pace-summary dt { color: var(--muted); font-size: 12px; }
+.report-pace-summary dd { margin: 5px 0 0; font-size: 17px; font-weight: 700; overflow-wrap: anywhere; }
+.report-pace-summary p { font-size: 12px; line-height: 1.6; margin: 14px 0 0; }
 .report-chart figcaption { font-size: 14px; font-weight: 600; margin-bottom: 12px; }
 .report-chart svg { width: 100%; height: auto; display: block; overflow: visible; }
 .report-chart-label { fill: currentColor; font-size: 17px; }

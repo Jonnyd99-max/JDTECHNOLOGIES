@@ -1,4 +1,5 @@
 import { jsPDF } from "jspdf";
+import { paceSummary } from "./paceSummary";
 import { capacity, forecast, requiredTools, status } from "../data/calculations";
 import { reportGroups, reportNumber as fmt, validSnapshot, type ReportSnapshot } from "./reportStorage";
 
@@ -86,8 +87,15 @@ export function createReportPdf(snapshots: ReportSnapshot[]): jsPDF {
       pdf.setDrawColor(30, 38, 50); pdf.setLineDashPattern([1, 1], 0); pdf.line(x, 113, x, 118); pdf.line(x, 132, x, 137); pdf.setLineDashPattern([], 0);
       text("100% target", Math.max(14, x - 20), 145, 8, false, 30);
     }
-    text("Snapshot figures and assumptions", 14, 156, 11, true);
-    let y = 162;
+    if (s.group === "pace") {
+      const summary = paceSummary(s);
+      text("Target summary", 14, 153, 11, true);
+      text(`${summary.items[0][1]} remaining | ${summary.items[1][1]}/hour required | ${summary.items[2][1]}/hour ${s.multiplier === 1 ? "current" : "planned"}`, 14, 160, 9);
+      text(`Estimated target completion: ${summary.items[3][1]} (from ${s.asOf} snapshot)`, 14, 167, 9, true);
+      text(summary.takeaway, 14, 174, 9);
+    }
+    text("Snapshot figures and assumptions", 14, s.group === "pace" ? 184 : 156, 11, true);
+    let y = s.group === "pace" ? 190 : 162;
     rows.forEach(([label, value], i) => {
       pdf.setFont("helvetica", "normal"); pdf.setFontSize(9);
       const wrapped: string[] = pdf.splitTextToSize(clean(value), 84);
