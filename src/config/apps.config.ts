@@ -2,7 +2,6 @@ import {
   AudioLines,
   ChartNoAxesCombined,
   Database,
-  ArrowLeftRight,
   Sparkles,
   Workflow,
 } from "lucide-react";
@@ -34,15 +33,6 @@ export const apps = [
     route: "/data",
     status: "active",
     theme: "orange",
-  },
-  {
-    id: "handover",
-    name: "Handover",
-    description: "Keep your team in sync",
-    icon: ArrowLeftRight,
-    route: "/handover",
-    status: "coming-soon",
-    theme: "green",
   },
   {
     id: "reporting",
