@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Orb } from "../../components/Orb";
 import { copyText } from "../../services/clipboard";
-import { capacity, forecast, requiredTools, status } from "../data/calculations";
+import { capacity, downtimeImpact, forecast, requiredTools, status } from "../data/calculations";
 import { executiveSummary, loadReports, reportGroups, reportNumber as fmt, type ReportCollection, type ReportGroup, type ReportSnapshot } from "./reportStorage";
 import "./reporting.css";
 import { paceSummary } from "./paceSummary";
@@ -45,6 +45,12 @@ function Snapshot({ data }: { data: ReportSnapshot }) {
     table = [["Capacity per tool / 24 hours", fmt(data.tool.capacity24)], ["As of", data.asOf], ["Period", data.mode === "work" ? "07:00 → 07:00" : "00:00 → 00:00"], ["Hours elapsed", fmt(24 - data.remaining)], ["Hours remaining", fmt(data.remaining)], ["Total 24-hour capacity", fmt(r.total)], ["Theoretical remaining capacity", fmt(r.available)]];
     chart = <Bars title="Selected run · output capacity" rows={[{ label: "Full 24-hour capacity", value: r.total }, { label: "Theoretical capacity remaining", value: r.available }]} />;
     note = "Theoretical capacity at a constant rate. Actual production, downtime and rejects are not measured here.";
+  } else if (data.group === "downtime") {
+    const r = downtimeImpact(data.tool.capacity24, data.minutes)!;
+    metrics = [["Full capacity / 24h", fmt(r.total)], ["Lost output", fmt(r.lost)], ["Adjusted output", fmt(r.output)], ["Overall uptime", `${fmt(r.uptime)}%`]];
+    table = [["Tool group", data.tool.name], ["Capacity per tool / 24 hours", fmt(data.tool.capacity24)], ["Number of tools", fmt(data.minutes.length, 0)], ["Run duration", "24 hours"], ["Total tool downtime", `${fmt(r.minutes)} minutes`], ["Target", data.target === null ? "Not set" : fmt(data.target)], ["Gap to target", data.target === null ? "Not set" : `${r.output >= data.target ? "+" : ""}${fmt(r.output - data.target)}`]];
+    chart = <Bars title="Full capacity and downtime-adjusted output" rows={[{ label: "Full 24-hour capacity", value: r.total }, { label: "Adjusted output", value: r.output }]} />;
+    note = "Estimated output at a constant saved production rate. Rejects and speed changes are excluded. Total tool downtime includes overlapping stops across tools.";
   } else {
     const r = requiredTools(data.target, data.tool.capacity24)!;
     metrics = [["24-hour target", fmt(data.target)], ["Tools required", fmt(r.count, 0)], ["Resulting capacity", fmt(r.total)], ["Spare capacity", fmt(r.spare)]];
@@ -57,6 +63,7 @@ function Snapshot({ data }: { data: ReportSnapshot }) {
     <Metrics items={metrics} />
     <div className="report-detail-grid"><div>{chart}{data.group === "pace" && <section className="report-pace-summary" aria-label="Target summary"><h3>Target summary</h3><dl>{paceSummary(data).items.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl><p>{paceSummary(data).takeaway}</p><p className="muted">Estimate from the saved {data.asOf} snapshot and selected future pace.</p></section>}</div><Table rows={table} /></div>
     {data.group === "capacity" && data.library.length > 1 && <details className="report-library"><summary>Saved tool capacities included in this snapshot ({data.library.length})</summary><div className="report-table-wrap"><table className="report-table"><caption>Capacity per individual tool · not combined production</caption><thead><tr><th scope="col">Tool</th><th scope="col">Output / 24 hours</th></tr></thead><tbody>{data.library.map(tool => <tr key={tool.id}><th scope="row">{tool.name}</th><td>{fmt(tool.capacity24)}</td></tr>)}</tbody></table></div></details>}
+    {data.group === "downtime" && <div className="report-library report-table-wrap"><table className="report-table"><caption>Individual tool downtime · 24-hour run</caption><thead><tr><th scope="col">Tool</th><th scope="col">Downtime (minutes)</th><th scope="col">Uptime</th><th scope="col">Lost output</th><th scope="col">Adjusted output</th></tr></thead><tbody>{downtimeImpact(data.tool.capacity24, data.minutes)!.rows.map((row, i) => <tr key={i}><th scope="row">{data.tool.name} {i + 1}</th><td>{fmt(row.downtime)}</td><td>{fmt(row.uptime)}%</td><td>{fmt(row.lost)}</td><td>{fmt(row.output)}</td></tr>)}</tbody></table></div>}
     <p className="muted report-note">{note}</p>
   </article>;
 }
@@ -100,8 +107,8 @@ export function ReportingScreen() {
       <div className="inline-buttons"><button className="button primary small" disabled={!shown.length || !!error || exporting} onClick={() => void downloadPdf()}>{exporting ? "Preparing PDF…" : "Download PDF"}</button><button className="button secondary small" disabled={!shown.length || !!error} onClick={() => { void copyText(executiveSummary(shown)).then(() => setMessage("Executive summary copied.")).catch(() => setMessage("Could not copy the summary. Try Download PDF instead.")); }}>Copy executive summary</button></div>
     </div>
     {message && <p className="report-controls" role="status">{message}</p>}
-    {download && <div className="report-download report-controls"><strong>{download.filename}</strong><div className="inline-buttons"><a className="button secondary small" href={download.url} download={download.filename}>Download again</a><a className="button secondary small" href={download.url} target="_blank" rel="noopener noreferrer">Open PDF</a></div><p className="muted">Each tool group includes its own complete branded report page. Your browser controls where downloads are saved.</p></div>}
-    {!error && !shown.length && <section className="report-empty"><h2>{all.length ? "This tool group has not been sent yet." : "Your executive dashboard starts with Data Tools."}</h2><p>Open Pace & Forecast, Capacity Calculator or Required Tools, enter your figures, then press Send to Reporting.</p><Link className="button primary" to="/data">Open Data Tools</Link></section>}
+    {download && <div className="report-download report-controls"><strong>{download.filename}</strong><div className="inline-buttons"><a className="button secondary small" href={download.url} download={download.filename}>Download again</a><a className="button secondary small" href={download.url} target="_blank" rel="noopener noreferrer">Open PDF</a></div><p className="muted">Each tool group includes its own complete branded report page. Downtime reports include additional pages for individual tools. Your browser controls where downloads are saved.</p></div>}
+    {!error && !shown.length && <section className="report-empty"><h2>{all.length ? "This tool group has not been sent yet." : "Your executive dashboard starts with Data Tools."}</h2><p>Open a Data Tools calculator, enter your figures, then press Send to Reporting.</p><Link className="button primary" to="/data">Open Data Tools</Link></section>}
     {!error && shown.map(snapshot => <Snapshot key={snapshot.group} data={snapshot} />)}
     <footer className="report-footer">JD Technology · Lumo · Device-local report. Snapshots may have different dates, periods and targets; they are not combined totals.</footer>
   </div>;

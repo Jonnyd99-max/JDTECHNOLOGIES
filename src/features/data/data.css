@@ -3,6 +3,10 @@
   max-width: 720px;
   margin: 0 auto;
 }
+.downtime-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; align-items: center; padding-bottom: 18px; border-bottom: 1px solid var(--border); }
+.downtime-output { display: grid; gap: 8px; overflow-wrap: anywhere; }
+.downtime-output span { font-size: 12px; }
+@media (max-width: 480px) { .downtime-row { grid-template-columns: 1fr; gap: 10px; } }
 .data-heading {
   position: relative;
   padding-right: 95px;

@@ -25,6 +25,7 @@ import { SummaryScreen } from "./features/lumo/Summary";
 import { SettingsScreen } from "./features/lumo/Settings";
 import { WhiteboardScreen } from "./features/whiteboard/Whiteboard";
 import { ReportingScreen } from "./features/reporting/Reporting";
+import { DowntimeCalculator } from "./features/data/Downtime";
 import {
   DataToolsHome,
   PaceCalculator,
@@ -147,6 +148,7 @@ function Shell() {
           <Route path="/data/pace" element={<PaceCalculator />} />
           <Route path="/data/percentage" element={<PercentageCalculator />} />
           <Route path="/data/capacity" element={<CapacityCalculator />} />
+          <Route path="/data/downtime" element={<DowntimeCalculator />} />
           <Route
             path="/data/required-tools"
             element={<RequiredToolsCalculator />}

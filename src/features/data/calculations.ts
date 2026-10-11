@@ -125,3 +125,13 @@ export function requiredTools(target: number, perTool: number) {
   if (!Number.isSafeInteger(count) || !Number.isFinite(total)) return null;
   return { count, total, spare: total - target };
 }
+export function downtimeImpact(perTool: number, minutes: number[]) {
+  if (!Number.isFinite(perTool) || perTool <= 0 || !minutes.length || minutes.length > 1000
+    || minutes.some(n => !Number.isFinite(n) || n < 0 || n > 1440)) return null;
+  const rows = minutes.map(downtime => ({ downtime, uptime: (1 - downtime / 1440) * 100,
+    lost: perTool * (downtime / 1440), output: perTool * (1 - downtime / 1440) }));
+  const total = perTool * minutes.length, lost = rows.reduce((sum, row) => sum + row.lost, 0);
+  if (![total, lost].every(Number.isFinite)) return null;
+  return { rows, total, lost, output: Math.max(0, total - lost), uptime: (1 - lost / total) * 100,
+    minutes: minutes.reduce((sum, n) => sum + n, 0) };
+}

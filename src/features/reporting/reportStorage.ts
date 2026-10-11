@@ -1,13 +1,14 @@
-import { capacity, forecast, requiredTools } from "../data/calculations";
+import { capacity, downtimeImpact, forecast, requiredTools } from "../data/calculations";
 import type { CapacityTool } from "../../storage/ToolStorage";
 
-export const reportGroups = { pace: "Pace & Forecast", capacity: "Capacity Calculator", required: "Required Tools" } as const;
+export const reportGroups = { pace: "Pace & Forecast", capacity: "Capacity Calculator", required: "Required Tools", downtime: "Downtime Impact" } as const;
 export type ReportGroup = keyof typeof reportGroups;
 type Stamp = { sentAt: string };
 export type ReportInput =
   | { group: "pace"; target: number; actual: number; elapsed: number; remaining: number; multiplier: number; asOf: string; mode: "work" | "manual" }
   | { group: "capacity"; tool: CapacityTool; count: number; remaining: number; asOf: string; mode: "work" | "standard"; library: CapacityTool[] }
-  | { group: "required"; tool: CapacityTool; target: number };
+  | { group: "required"; tool: CapacityTool; target: number }
+  | { group: "downtime"; tool: CapacityTool; minutes: number[]; target: number | null };
 export type ReportSnapshot = ReportInput & Stamp;
 export type ReportCollection = Partial<Record<ReportGroup, ReportSnapshot>>;
 const STORAGE_KEY = "jd.reports.v1";
@@ -31,6 +32,8 @@ export function validSnapshot(value: unknown): value is ReportSnapshot {
     && !!capacity(s.tool.capacity24, s.count, s.remaining) && (s.mode === "work" || s.mode === "standard")
     && /^([01]\d|2[0-3]):[0-5]\d$/.test(s.asOf) && Array.isArray(s.library) && s.library.length <= 1000 && s.library.every(toolValid);
   if (s.group === "required") return toolValid(s.tool) && finite(s.target) && !!requiredTools(s.target, s.tool.capacity24);
+  if (s.group === "downtime") return toolValid(s.tool) && Array.isArray(s.minutes) && s.minutes.every(finite)
+    && !!downtimeImpact(s.tool.capacity24, s.minutes) && (s.target === null || (finite(s.target) && s.target >= 0));
   return false;
 }
 export function loadReports(storage: Storage = localStorage): ReportCollection {
@@ -60,6 +63,10 @@ export function executiveSummary(snapshots: ReportSnapshot[]): string {
     if (s.group === "capacity") {
       const r = capacity(s.tool.capacity24, s.count, s.remaining)!;
       return `${header}\n${s.tool.name} · ${s.count} tools · as of ${s.asOf}\nCapacity/tool/24h: ${reportNumber(s.tool.capacity24)} | Total/24h: ${reportNumber(r.total)} | Theoretical remaining: ${reportNumber(r.available)}\nPeriod: ${s.mode === "work" ? "07:00–07:00" : "00:00–00:00"} | Remaining: ${reportNumber(s.remaining)}h`;
+    }
+    if (s.group === "downtime") {
+      const r = downtimeImpact(s.tool.capacity24, s.minutes)!;
+      return `${header}\n${s.tool.name} · ${s.minutes.length} tools · full 24-hour run\nFull capacity: ${reportNumber(r.total)} | Lost output: ${reportNumber(r.lost)} | Adjusted output: ${reportNumber(r.output)} | Uptime: ${reportNumber(r.uptime)}%${s.target !== null ? `\nTarget: ${reportNumber(s.target)} | Gap: ${reportNumber(r.output - s.target)}` : ""}\n${r.rows.map((row, i) => `${s.tool.name} ${i + 1}: ${reportNumber(row.downtime)} minutes downtime | ${reportNumber(row.output)} output`).join("\n")}`;
     }
     const r = requiredTools(s.target, s.tool.capacity24)!;
     return `${header}\n${s.tool.name} · full 24-hour run\nTarget: ${reportNumber(s.target)} | Tools required: ${r.count} | Capacity: ${reportNumber(r.total)} | Spare: ${reportNumber(r.spare)}`;

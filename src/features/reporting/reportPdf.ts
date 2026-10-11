@@ -1,6 +1,6 @@
 import { jsPDF } from "jspdf";
 import { paceSummary } from "./paceSummary";
-import { capacity, forecast, requiredTools, status } from "../data/calculations";
+import { capacity, downtimeImpact, forecast, requiredTools, status } from "../data/calculations";
 import { reportGroups, reportNumber as fmt, validSnapshot, type ReportSnapshot } from "./reportStorage";
 
 const clean = (text: string) => text.replace(/[–—]/g, "-").replace(/→/g, "to").replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/·/g, "|");
@@ -25,8 +25,7 @@ export function createReportPdf(snapshots: ReportSnapshot[]): jsPDF {
     }
     pdf.text(label, x, y);
   };
-  snapshots.forEach((s, index) => {
-    if (index) pdf.addPage();
+  const header = (s: ReportSnapshot) => {
     // Brand, group and compact orb are repeated on the same page as the figures.
     pdf.setFillColor(246, 248, 251); pdf.roundedRect(14, 14, 182, 43, 3, 3, "F");
     pdf.setDrawColor(244, 119, 33); pdf.setLineWidth(.8); pdf.line(18, 15, 192, 15);
@@ -41,7 +40,10 @@ export function createReportPdf(snapshots: ReportSnapshot[]): jsPDF {
       pdf.circle(179 - (1 - t) * 1.2, 32 - (1 - t) * 1.2, 5.8 * t + .1, "F");
     }
     text("Lumo", 174, 45, 9, true, 20);
-
+  };
+  snapshots.forEach((s, index) => {
+    if (index) pdf.addPage();
+    header(s);
     let metrics: [string, string][];
     let rows: [string, string][];
     let bars: { label: string; value: number; suffix?: string }[];
@@ -59,6 +61,12 @@ export function createReportPdf(snapshots: ReportSnapshot[]): jsPDF {
       bars = [{ label: "Full 24-hour capacity", value: r.total }, { label: "Theoretical capacity remaining", value: r.available }];
       rows = [["Selected tool", s.tool.name], ["Capacity per tool / 24 hours", fmt(s.tool.capacity24)], ["Number of tools", fmt(s.count, 0)], ["Period", s.mode === "work" ? "07:00 to 07:00" : "00:00 to 00:00"], ["As of", s.asOf], ["Hours elapsed / remaining", `${fmt(24 - s.remaining)} / ${fmt(s.remaining)}`], ["Total 24-hour capacity", fmt(r.total)], ["Theoretical remaining capacity", fmt(r.available)]];
       note = "Theoretical capacity at a constant rate. Actual production, downtime and rejects are not measured here.";
+    } else if (s.group === "downtime") {
+      const r = downtimeImpact(s.tool.capacity24, s.minutes)!;
+      metrics = [["Full capacity / 24h", fmt(r.total)], ["Lost output", fmt(r.lost)], ["Adjusted output", fmt(r.output)], ["Uptime", `${fmt(r.uptime)}%`]];
+      bars = [{ label: "Full 24-hour capacity", value: r.total }, { label: "Adjusted output", value: r.output }];
+      rows = [["Tool group", s.tool.name], ["Capacity per tool / 24 hours", fmt(s.tool.capacity24)], ["Number of tools", fmt(s.minutes.length, 0)], ["Run duration", "24 hours"], ["Total tool downtime", `${fmt(r.minutes)} minutes`], ["Target", s.target === null ? "Not set" : fmt(s.target)], ["Gap to target", s.target === null ? "Not set" : `${r.output >= s.target ? "+" : ""}${fmt(r.output - s.target)}`]];
+      note = "Estimated output at a constant saved production rate. Rejects and speed changes are excluded. Total tool downtime includes overlapping stops across tools.";
     } else {
       const r = requiredTools(s.target, s.tool.capacity24)!;
       metrics = [["Target / 24h", fmt(s.target)], ["Tools required", fmt(r.count, 0)], ["Resulting capacity", fmt(r.total)], ["Spare capacity", fmt(r.spare)]];
@@ -106,9 +114,29 @@ export function createReportPdf(snapshots: ReportSnapshot[]): jsPDF {
       y += h;
     });
     pdf.setFontSize(8); pdf.setTextColor(85, 96, 111); pdf.text(pdf.splitTextToSize(note, 182), 14, y + 9);
-    pdf.setDrawColor(210, 216, 224); pdf.line(14, 277, 196, 277);
-    text("JD Technology | Lumo | Device-local snapshot", 14, 283, 8, false, 145);
-    text(`Page ${index + 1} of ${snapshots.length}`, 174, 283, 8, false, 24);
+    if (s.group === "downtime") {
+      const detail = downtimeImpact(s.tool.capacity24, s.minutes)!.rows;
+      for (let start = 0; start < detail.length; start += 18) {
+        pdf.addPage(); header(s);
+        text("Individual tool downtime | 24-hour run", 14, 69, 12, true);
+        text("Tool", 18, 80, 9, true, 67); text("Minutes lost", 86, 80, 8, true, 28);
+        text("Uptime", 116, 80, 8, true, 24); text("Lost output", 140, 80, 8, true, 28); text("Output", 170, 80, 8, true, 25);
+        detail.slice(start, start + 18).forEach((row, i) => {
+          const y = 85 + i * 9;
+          pdf.setFillColor(...(i % 2 ? [255, 255, 255] : [246, 248, 251]) as [number, number, number]); pdf.rect(14, y, 182, 9, "F");
+          text(`${s.tool.name} ${start + i + 1}`, 18, y + 6, 9, false, 65);
+          text(fmt(row.downtime), 86, y + 6, 9, false, 27); text(`${fmt(row.uptime)}%`, 116, y + 6, 9, false, 22);
+          text(fmt(row.lost), 140, y + 6, 9, false, 27); text(fmt(row.output), 170, y + 6, 9, false, 24);
+        });
+      }
+    }
   });
+  const pages = pdf.getNumberOfPages();
+  for (let page = 1; page <= pages; page++) {
+    pdf.setPage(page);
+    pdf.setDrawColor(210, 216, 224); pdf.setLineWidth(.2); pdf.line(14, 277, 196, 277);
+    text("JD Technology | Lumo | Device-local snapshot", 14, 283, 8, false, 145);
+    text(`Page ${page} of ${pages}`, 174, 283, 8, false, 24);
+  }
   return pdf;
 }

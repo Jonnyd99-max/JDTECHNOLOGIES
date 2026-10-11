@@ -7,6 +7,7 @@ import { ReportingScreen } from "./Reporting";
 import { loadReports, sendReport } from "./reportStorage";
 import { CapacityCalculator, PaceCalculator, PercentageCalculator, RequiredToolsCalculator } from "../data/DataTools";
 import { LocalToolStorage } from "../../storage/ToolStorage";
+import { DowntimeCalculator } from "../data/Downtime";
 
 vi.mock("../../components/Orb", () => ({ Orb: () => <div aria-hidden="true">Orb</div> }));
 vi.mock("../../services/clipboard", () => ({ copyText: vi.fn().mockResolvedValue(undefined) }));
@@ -77,6 +78,33 @@ it("shows a useful empty state without demo figures", async () => {
   const page = await mount(<ReportingScreen />);
   try { expect(page.host.textContent).toContain("dashboard starts with Data Tools"); expect(page.host.querySelectorAll("article")).toHaveLength(0); }
   finally { await page.close(); }
+});
+it("names downtime rows from saved groups, assumes full uptime and sends individual downtime", async () => {
+  new LocalToolStorage().save([{ id: "h", name: "Hydrox", capacity24: 240 }, { id: "b", name: "Other", capacity24: 480 }]);
+  const page = await mount(<DowntimeCalculator />);
+  try {
+    const select = page.host.querySelector("select")!;
+    await act(async () => { select.value = "h"; select.dispatchEvent(new Event("change", { bubbles: true })); });
+    await fill(page.host, "Number of tools", "10");
+    expect(page.host.textContent).toContain("Hydrox 10");
+    expect(page.host.textContent).toContain("ADJUSTED 24-HOUR OUTPUT2,400");
+    await fill(page.host, "Hydrox 1 ·", "30"); await fill(page.host, "Hydrox 2 ·", "90");
+    expect(page.host.textContent).toContain("ADJUSTED 24-HOUR OUTPUT2,380");
+    await fill(page.host, "Hydrox 1 ·", "1441");
+    const send = [...page.host.querySelectorAll("button")].find(b => b.textContent === "Send to Reporting")!;
+    expect(send.disabled).toBe(true);
+    await fill(page.host, "Hydrox 1 ·", "30");
+    await act(async () => send.click());
+    expect(loadReports().downtime).toMatchObject({ minutes: [30, 90, 0, 0, 0, 0, 0, 0, 0, 0], target: null, tool: { name: "Hydrox" } });
+    await fill(page.host, "Number of tools", "2");
+    expect(page.host.textContent).toContain("ADJUSTED 24-HOUR OUTPUT460");
+    await act(async () => { select.value = "b"; select.dispatchEvent(new Event("change", { bubbles: true })); });
+    expect(page.host.textContent).toContain("Other 2");
+    expect(page.host.textContent).toContain("ADJUSTED 24-HOUR OUTPUT960");
+  } finally { await page.close(); }
+  const report = await mount(<ReportingScreen />);
+  try { expect(report.host.textContent).toContain("Hydrox 10"); expect(report.host.textContent).toContain("2,380"); }
+  finally { await report.close(); }
 });
 it("downloads a named PDF without invoking print and provides open/download links", async () => {
   sendReport({ group: "required", target: 1000, tool: { id: "a", name: "Example Tool", capacity24: 240 } });

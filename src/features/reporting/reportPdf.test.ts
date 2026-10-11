@@ -26,3 +26,10 @@ it("uses a recognisable dated filename and rejects missing or invalid figures", 
   expect(() => createReportPdf([])).toThrow("valid report");
   expect(() => createReportPdf([{ ...snapshots[0], target: -1 } as ReportSnapshot])).toThrow("valid report");
 });
+it("paginates individual downtime rows with a separate branded summary", () => {
+  const s: ReportSnapshot = { group: "downtime", sentAt: "2026-10-11T12:00:00Z", tool: { ...tool, name: "Hydrox" }, minutes: [30, 90, ...Array(17).fill(0)], target: 4500 };
+  const pdf = createReportPdf([s]);
+  expect(pdf.getNumberOfPages()).toBe(3);
+  expect(() => createReportPdf([{ ...s, minutes: [1441] }])).toThrow();
+  if (process.env.REPORT_PDF_SAMPLE_DIR) writeFileSync(`${process.env.REPORT_PDF_SAMPLE_DIR}/downtime-report-sample.pdf`, Buffer.from(pdf.output("arraybuffer")));
+});

@@ -27,7 +27,7 @@ const format = (value: number | null, digits = 1) =>
   value !== null && Number.isFinite(value)
     ? value.toLocaleString(undefined, { maximumFractionDigits: digits })
     : "—";
-function Frame({ title, children }: { title: string; children: ReactNode }) {
+export function Frame({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div className="data-tools">
       <div className="data-heading">
@@ -156,6 +156,7 @@ export function DataToolsHome() {
       description: "Tools needed to achieve your 24-hour target",
       Icon: Factory,
     },
+    { path: "downtime", title: "Downtime Impact", description: "Output after individual tool downtime", Icon: Factory },
   ];
   return (
     <div className="data-tools">
