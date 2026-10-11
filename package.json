@@ -17,6 +17,7 @@
     "@capacitor/clipboard": "^7.0.0",
     "@capacitor/core": "^7.4.0",
     "@huggingface/transformers": "3.8.1",
+    "jspdf": "^4.2.1",
     "lucide-react": "^0.468.0",
     "onnxruntime-common": "1.22.0-dev.20250409-89f8206ba4",
     "onnxruntime-web": "1.22.0-dev.20250409-89f8206ba4",

@@ -4,13 +4,13 @@ import { createRoot } from "react-dom/client";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, expect, it, vi } from "vitest";
 import { ReportingScreen } from "./Reporting";
-import { loadReports } from "./reportStorage";
+import { loadReports, sendReport } from "./reportStorage";
 import { CapacityCalculator, PaceCalculator, PercentageCalculator, RequiredToolsCalculator } from "../data/DataTools";
 import { LocalToolStorage } from "../../storage/ToolStorage";
 
 vi.mock("../../components/Orb", () => ({ Orb: () => <div aria-hidden="true">Orb</div> }));
 vi.mock("../../services/clipboard", () => ({ copyText: vi.fn().mockResolvedValue(undefined) }));
-afterEach(() => { localStorage.clear(); vi.unstubAllGlobals(); });
+afterEach(() => { localStorage.clear(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 async function mount(element: React.ReactNode) {
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   const host = document.createElement("div"); document.body.append(host);
@@ -77,4 +77,23 @@ it("shows a useful empty state without demo figures", async () => {
   const page = await mount(<ReportingScreen />);
   try { expect(page.host.textContent).toContain("dashboard starts with Data Tools"); expect(page.host.querySelectorAll("article")).toHaveLength(0); }
   finally { await page.close(); }
+});
+it("downloads a named PDF without invoking print and provides open/download links", async () => {
+  sendReport({ group: "required", target: 1000, tool: { id: "a", name: "Example Tool", capacity24: 240 } });
+  vi.stubGlobal("URL", class extends URL { static createObjectURL = vi.fn(() => "blob:report"); static revokeObjectURL = vi.fn(); });
+  const print = vi.spyOn(window, "print").mockImplementation(() => {});
+  const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+  const page = await mount(<ReportingScreen />);
+  try {
+    await act(async () => {
+      [...page.host.querySelectorAll("button")].find(b => b.textContent === "Download PDF")!.click();
+      await import("./reportPdf");
+    });
+    expect(print).not.toHaveBeenCalled();
+    expect(click).toHaveBeenCalledTimes(1);
+    expect(page.host.textContent).toContain("JD-Technology-required-report-");
+    expect(page.host.querySelector('a[download]')?.getAttribute("href")).toBe("blob:report");
+    expect(page.host.querySelector('a[target="_blank"]')?.textContent).toBe("Open PDF");
+  } finally { await page.close(); }
+  expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:report");
 });

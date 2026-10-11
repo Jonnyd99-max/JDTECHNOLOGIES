@@ -51,7 +51,7 @@ Pace & Forecast, Capacity Calculator and Required Tools each offer **Send to Rep
 
 Open **Reporting** from the workspace or calculator. The executive view includes JD Technology branding, a compact animated Lumo orb with label, group headings, timestamps, KPI cards, accessible SVG comparison charts and detailed tables. All-groups and individual-group filters select the visible report; groups remain independent because periods, units and targets may differ. Pace attainment keeps a 100% marker on an adaptive scale. Capacity and Required Tools explicitly label theoretical output and exclude downtime/rejects. No historical trends or combined production totals are inferred from single snapshots.
 
-**Copy executive summary** exports the visible groups. **Print / Save as PDF** opens the browser's print flow using a dedicated print stylesheet with report branding and without app navigation; PDF availability depends on the device/browser. No reporting API, account, cloud sync or cost is added. Clearing app data removes reports. Do not rely on device-local snapshots as the only copy of important figures.
+**Copy executive summary** exports the visible groups. **Download PDF** generates a PDF locally and downloads it directly, bypassing the print-service chooser. Each selected tool group gets a complete page with JD Technology, its heading, a small labelled Lumo orb, figures, chart and table. A dated filename and **Download again** / **Open PDF** links help locate the file; the browser controls its download location. The PDF library is bundled and loaded only when exporting. No reporting API, account, cloud sync or cost is added. Clearing app data removes reports. Do not rely on device-local snapshots as the only copy of important figures.
 
 ## Run locally
 

@@ -7,6 +7,8 @@
 .report-lumo { flex: 0 0 88px; display: grid; justify-items: center; gap: 2px; color: var(--orange); font-size: 12px; font-weight: 700; }
 .report-lumo > .orb-wrap { --size: 44px; width: 76px; height: 76px; margin: 0; overflow: visible; }
 .report-toolbar { display: grid; gap: 14px; margin-bottom: 24px; }
+.report-download { border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin: 16px 0 24px; display: grid; gap: 12px; }
+.report-download strong { overflow-wrap: anywhere; font-size: 13px; }
 .report-filters { display: flex; flex-wrap: wrap; gap: 8px; }
 .report-section { border: 1px solid var(--border); background: var(--card); border-radius: 20px; padding: 26px; margin-bottom: 24px; }
 .report-section-heading { display: flex; justify-content: space-between; align-items: start; gap: 16px; margin-bottom: 22px; }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Orb } from "../../components/Orb";
 import { copyText } from "../../services/clipboard";
@@ -64,6 +64,11 @@ export function ReportingScreen() {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [group, setGroup] = useState<ReportGroup | "all">("all");
+  const [exporting, setExporting] = useState(false);
+  const [download, setDownload] = useState<{ url: string; filename: string } | null>(null);
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  useEffect(() => () => { if (download) URL.revokeObjectURL(download.url); }, [download]);
   useEffect(() => {
     const refresh = () => { try { setReports(loadReports()); setError(""); } catch { setError("Saved reports could not be loaded. Existing data has been preserved. Check device storage and reload."); } };
     refresh(); window.addEventListener("storage", refresh); window.addEventListener("focus", refresh);
@@ -71,14 +76,30 @@ export function ReportingScreen() {
   }, []);
   const all = (Object.keys(reportGroups) as ReportGroup[]).flatMap(key => reports[key] ? [reports[key]!] : []);
   const shown = all.filter(s => group === "all" || s.group === group);
+  async function downloadPdf() {
+    if (exporting || !shown.length) return;
+    setExporting(true); setMessage("Preparing your PDF on this device…");
+    try {
+      const { createReportPdf, reportPdfFilename } = await import("./reportPdf");
+      const pdf = createReportPdf(shown);
+      if (!mounted.current) return;
+      const filename = reportPdfFilename(shown), url = URL.createObjectURL(pdf.output("blob"));
+      setDownload({ url, filename });
+      const link = document.createElement("a"); link.href = url; link.download = filename;
+      document.body.appendChild(link); link.click(); link.remove();
+      setMessage(`PDF ready: ${filename}. Check your browser's Downloads. You can download it again or open it below.`);
+    } catch { if (mounted.current) setMessage("Could not create the PDF. Try again or copy the executive summary."); }
+    finally { if (mounted.current) setExporting(false); }
+  }
   return <div className="reporting-page">
     <Link className="text-button report-controls" to="/">← Workspace</Link>
     <header className="report-header"><div><p className="eyebrow">JD TECHNOLOGY</p><h1>Executive overview</h1><p className="report-subtitle">Data Tools report · {group === "all" ? "All submitted tool groups" : reportGroups[group]}</p><p className="muted">Latest snapshot from each tool group. Figures stay as sent until you send an update.</p></div><div className="report-lumo"><Orb small /><span>Lumo</span></div></header>
     {error && <p className="banner error-banner" role="alert">{error}</p>}
-    <div className="report-toolbar report-controls"><div role="group" aria-label="Report tool group" className="report-filters">{(["all", ...Object.keys(reportGroups)] as (ReportGroup | "all")[]).map(key => <button key={key} className={`button ${group === key ? "primary" : "secondary"} small`} aria-pressed={group === key} onClick={() => setGroup(key)}>{key === "all" ? "All groups" : reportGroups[key]}</button>)}</div>
-      <div className="inline-buttons"><button className="button secondary small" disabled={!shown.length || !!error} onClick={() => { void copyText(executiveSummary(shown)).then(() => setMessage("Executive summary copied.")).catch(() => setMessage("Could not copy the summary. Try Print / Save as PDF instead.")); }}>Copy executive summary</button><button className="button secondary small" disabled={!shown.length || !!error} onClick={() => window.print()}>Print / Save as PDF</button></div>
+    <div className="report-toolbar report-controls"><div role="group" aria-label="Report tool group" className="report-filters">{(["all", ...Object.keys(reportGroups)] as (ReportGroup | "all")[]).map(key => <button key={key} disabled={exporting} className={`button ${group === key ? "primary" : "secondary"} small`} aria-pressed={group === key} onClick={() => setGroup(key)}>{key === "all" ? "All groups" : reportGroups[key]}</button>)}</div>
+      <div className="inline-buttons"><button className="button primary small" disabled={!shown.length || !!error || exporting} onClick={() => void downloadPdf()}>{exporting ? "Preparing PDF…" : "Download PDF"}</button><button className="button secondary small" disabled={!shown.length || !!error} onClick={() => { void copyText(executiveSummary(shown)).then(() => setMessage("Executive summary copied.")).catch(() => setMessage("Could not copy the summary. Try Download PDF instead.")); }}>Copy executive summary</button></div>
     </div>
     {message && <p className="report-controls" role="status">{message}</p>}
+    {download && <div className="report-download report-controls"><strong>{download.filename}</strong><div className="inline-buttons"><a className="button secondary small" href={download.url} download={download.filename}>Download again</a><a className="button secondary small" href={download.url} target="_blank" rel="noopener noreferrer">Open PDF</a></div><p className="muted">Each tool group includes its own complete branded report page. Your browser controls where downloads are saved.</p></div>}
     {!error && !shown.length && <section className="report-empty"><h2>{all.length ? "This tool group has not been sent yet." : "Your executive dashboard starts with Data Tools."}</h2><p>Open Pace & Forecast, Capacity Calculator or Required Tools, enter your figures, then press Send to Reporting.</p><Link className="button primary" to="/data">Open Data Tools</Link></section>}
     {!error && shown.map(snapshot => <Snapshot key={snapshot.group} data={snapshot} />)}
     <footer className="report-footer">JD Technology · Lumo · Device-local report. Snapshots may have different dates, periods and targets; they are not combined totals.</footer>
