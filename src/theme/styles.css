@@ -1976,6 +1976,9 @@ form textarea,
 @media (max-width: 650px) { .board-comparison { grid-template-columns: 1fr; } .board-controls { padding: 18px; } }
 .board-text { display: block; width: 100%; box-sizing: border-box; padding: 16px; margin: 10px 0 18px; color: inherit; background: transparent; border: 1px solid var(--border); border-radius: 12px; font: inherit; line-height: 1.6; resize: vertical; }
 .board-layout { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.note-formatting { display: grid; gap: 14px; padding: 18px; border: 1px solid #f4772140; border-radius: 12px; background: #f4772108; margin: 18px 0; }
+.note-formatting h3 { font-size: 17px; }
+.note-formatting p { line-height: 1.6; font-size: 13px; }
 .board-layout select { max-width: 100%; padding: 12px; border-radius: 8px; background: var(--input); color: inherit; border: 1px solid var(--border); font: inherit; }
 
 .board-crop { flex-basis: 100%; }

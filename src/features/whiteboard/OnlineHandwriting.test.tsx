@@ -5,10 +5,36 @@ import { afterEach, expect, it, vi } from "vitest";
 import { OnlineHandwriting } from "./OnlineHandwriting";
 import { prepareOnlinePhoto, readOnlinePhoto } from "./onlineOcr";
 import { saveOcrKey } from "./ocrKeyStorage";
+import { copyText } from "../../services/clipboard";
 
 vi.mock("./onlineOcr", () => ({ prepareOnlinePhoto: vi.fn(), readOnlinePhoto: vi.fn() }));
 vi.mock("../../services/clipboard", () => ({ copyText: vi.fn() }));
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); localStorage.clear(); vi.clearAllMocks(); });
+it("formats editable notes, copies the reviewed layout and undoes without another OCR request", async () => {
+  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
+  vi.stubGlobal("URL", { createObjectURL: vi.fn(() => "blob:preview"), revokeObjectURL: vi.fn() });
+  vi.mocked(prepareOnlinePhoto).mockResolvedValue(new Blob(["photo"]));
+  vi.mocked(readOnlinePhoto).mockResolvedValue("Tool  error state - AI/XML\r\nPush lots");
+  vi.mocked(copyText).mockResolvedValue(undefined);
+  saveOcrKey("test-key");
+  const host = document.createElement("div"); document.body.append(host);
+  const root = createRoot(host);
+  const button = (name: string) => [...host.querySelectorAll("button")].find(b => b.textContent === name)!;
+  try {
+    await act(async () => root.render(<OnlineHandwriting image="test-photo" />));
+    await act(async () => host.querySelector<HTMLInputElement>('input[type="checkbox"]')!.click());
+    await act(async () => button("Read online").click());
+    const select = host.querySelector("select")!;
+    await act(async () => { select.value = "bullets"; select.dispatchEvent(new Event("change", { bubbles: true })); });
+    await act(async () => button("Tidy layout").click());
+    expect(host.querySelector("textarea")!.value).toBe("- Tool error state - AI/XML\n- Push lots");
+    await act(async () => button("Copy text").click());
+    expect(copyText).toHaveBeenCalledWith("- Tool error state - AI/XML\n- Push lots");
+    await act(async () => button("Undo formatting").click());
+    expect(host.querySelector("textarea")!.value).toBe("Tool  error state - AI/XML\nPush lots");
+    expect(readOnlinePhoto).toHaveBeenCalledTimes(1);
+  } finally { await act(async () => root.unmount()); host.remove(); }
+});
 it("requires a key, consent and an explicit click, then aborts on navigation", async () => {
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   vi.stubGlobal("URL", { createObjectURL: vi.fn(() => "blob:preview"), revokeObjectURL: vi.fn() });

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Copy, Download, ScanText } from "lucide-react";
 import { copyText } from "../../services/clipboard";
 import { startExtraction, type TextLayout, type ExtractionCandidate } from "./extraction";
+import { NoteFormatting } from "./NoteFormatting";
 
 export function TextExtraction({ image, original }: { image: string; original: string }) {
   const [layout, setLayout] = useState<TextLayout>("form");
@@ -54,7 +55,7 @@ export function TextExtraction({ image, original }: { image: string; original: s
     </div>
     <p role="status" aria-live="polite">{message}</p>
     {complete && candidates.length > 1 && <details><summary>Compare both readings</summary><p className="muted">Forms show the prepared document reading first. Other layouts use the reader’s confidence, which does not guarantee accuracy. Copy useful words from either reading into your editable notes.</p>{candidates.map(candidate => <div key={candidate.source}><h3>{candidate.source}</h3><pre className="board-reading">{candidate.text || "No text detected."}</pre></div>)}</details>}
-    {(complete || text) && <><label htmlFor="extracted-notes">Editable notes</label><textarea id="extracted-notes" className="board-text" value={text} disabled={running} onChange={e => setText(e.target.value)} rows={12} />
+    {(complete || text) && <><NoteFormatting text={text} onChange={setText} disabled={running} /><label htmlFor="extracted-notes">Editable notes</label><textarea id="extracted-notes" className="board-text" value={text} disabled={running} onChange={e => setText(e.target.value)} rows={12} />
       <div className="inline-buttons"><button className="button secondary" disabled={!text.trim() || running} onClick={() => void copy()}><Copy size={18} /> Copy text</button><button className="button secondary" disabled={!text.trim() || running} onClick={download}><Download size={18} /> Download notes</button></div></>}
   </section>;
 }

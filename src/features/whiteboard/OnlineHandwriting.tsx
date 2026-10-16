@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { copyText } from "../../services/clipboard";
 import { prepareOnlinePhoto, readOnlinePhoto } from "./onlineOcr";
 import { loadOcrKey, saveOcrKey } from "./ocrKeyStorage";
+import { NoteFormatting } from "./NoteFormatting";
 
 export function OnlineHandwriting({ image }: { image: string }) {
   const [stored] = useState(loadOcrKey);
@@ -82,6 +83,6 @@ export function OnlineHandwriting({ image }: { image: string }) {
     <div className="inline-buttons"><button className="button primary" disabled={busy || !photo || !key.trim() || !consent} onClick={() => void read()}>Read online</button>{busy && <button className="button secondary" onClick={() => controller.current?.abort()}>Cancel</button>}</div>
     {!key.trim() && <p className="muted">Sign up and enter your own free key above to enable online reading.</p>}
     <p role="status" aria-live="polite">{message}</p>
-    {hasResult && <><label htmlFor="online-ocr-result">Online reading (editable)</label><textarea id="online-ocr-result" className="board-text" rows={8} value={text} onChange={event => setText(event.target.value)} /><button className="button secondary" disabled={!text.trim()} onClick={() => { const id = version.current; void copyText(text).then(() => { if (id === version.current) setMessage("Online reading copied."); }).catch(() => { if (id === version.current) setMessage("Select the text and copy it manually."); }); }}>Copy text</button></>}
+    {hasResult && <><NoteFormatting text={text} onChange={setText} disabled={busy} /><label htmlFor="online-ocr-result">Online reading (editable)</label><textarea id="online-ocr-result" className="board-text" rows={12} value={text} disabled={busy} onChange={event => setText(event.target.value)} /><button className="button secondary" disabled={busy || !text.trim()} onClick={() => { const id = version.current; void copyText(text).then(() => { if (id === version.current) setMessage("Online reading copied."); }).catch(() => { if (id === version.current) setMessage("Select the text and copy it manually."); }); }}>Copy text</button></>}
   </section>;
 }
